@@ -21,3 +21,16 @@
 - C is a grad student that is starting a new research project. They are interested in using this method to estimate mutation rate in a new strain and gene. They have not run any experiments yet.
 - They want to run the pipeline with example data to determine how to write their protocol for their strains.
 - They have some experience in R, but are unfamiliar with python and CLI.
+
+# User Story #4 
+## B, Graduate Student
+-This student, Rafaela, wants to create an image representing her population's mutation rate to present in her lab meeting at the end of the week
+- She needs this tool to be able to catch mistakes in the fastq file so she doesn't present false data, bt she needs it to work swiftly and seamlessly 
+- she has a basic familarity with coding in python, but not thorough with all
+
+#User Story #5
+## C, Research Scientist (Gilbert Grape)
+- Staff scientist also wanting to process their fastq file for understanding mutation rates of their bacteria populations
+- Gilbert wants to understand how the tool works under the hood so they can verify it is processing the data correctly
+- Gilbert needs to be able to track what is done with code coherently to understand how it is processing the data
+- Gilbert has years of python experience
