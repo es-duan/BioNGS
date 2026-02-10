@@ -28,7 +28,7 @@
 - She needs this tool to be able to catch mistakes in the fastq file so she doesn't present false data, bt she needs it to work swiftly and seamlessly 
 - she has a basic familarity with coding in python, but not thorough with all
 
-#User Story #5
+# User Story #5
 ## C, Research Scientist (Gilbert Grape)
 - Staff scientist also wanting to process their fastq file for understanding mutation rates of their bacteria populations
 - Gilbert wants to understand how the tool works under the hood so they can verify it is processing the data correctly
