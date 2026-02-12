@@ -49,3 +49,8 @@
 
 # Script 6: align sequences to reference gene
 - input: libraries of UMI/sequences, reference gene.gb
+- output: sequences trimmed to be without UMI, leaving only a gene sequence homologous to the reference gene, that are also aligned with the reference gene-- UMI, mutation, and frequency
+- dependencies: script 4 (and 5)
+- alignment is achieved by a biopython alignment function
+
+# Script 7: 
