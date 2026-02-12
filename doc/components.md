@@ -12,6 +12,12 @@
 
 
 
+# Script 0: check quality of the NGS file
+- input: input fastq files
+- output: csvs and histograms with information on how many reads per NGS sample, the length of those reads, and the quality of reads
+- description: use fastQC to quality check each input fastq file
+- dependencies: only need input fastq files
+
 # Script 1: generate folders to store population demultiplexed files
 - input: csv with population name and DNA index (forward and reserve) sequences
 - output: create a folder and empty R1 and R2 fastq files for each population
@@ -24,7 +30,22 @@
 - description: using biopython, loop through each pair of input fastq files (ensure R1 and R2 match by checking the header), detect the forward (first 8 base pairs of R1) and reverse (first 8 bps of R2) indexes, and match those with the populations listed in the multiplexing_info.csv. For each match, open the population fastq file and write in that read. Also, make sure that the input fastq file name matches the GW_name of the population.
     - quality check sequences: to make the script faster, load R1 reads first and check the length of the read. If it is under 150 bps, it is a short read. Place both reads in a short_reads_R1 or R2.fastq. Additionally, if the F and R indexes do not match any populations in the csv, put the R1 and R2 reads in a unmatched_reads_R1 and R2.fastq. There should be one pair of short_read/unmatched_read files per input file
 
-# Script 3: check quality of NGS data
+# Script 3: check quality of indexing/NGS data
 - input: input fastq files, populated demultiplexed population fastq files, short_read fastq files, and unmatched_read fastq files
 - output: histogram of read lengths from input fastq files; bar plot with the number of reads in each population fastq, short_read, and unmatched_read files (one per input fastq)
 - dependencies: script 2 must be run
+
+# Script 4: create a library of UMI reads for each population
+- input: demultiplexed population fastq files, UMI primer sequences
+- output: library where keys are UMI pairs and values are a list of a list of  R1 and R2 trimmed sequences that match that UMI
+- dependencies: script 2
+- description: take the demultiplexed fastq file for each population. Detect the UMI sequence be aligning to the primer sequence (the UMI is the 10 N bps on the primer) to each read. For each unique UMI, create a new key in a library. Then, loop though the the R1 and R2 files, detect UMIs, trim the primer (including index and UMI) from each read and place it in the respective R1 and R2 list for its UMI. Save the outputted list
+
+# Script 5: check quality of UMI data
+- input: libraries of UMI/sequences for each population
+- output: bar plot comparing the number of UMIs/population and reads per UMI per population
+- dependences: script 4
+- description: compare the number of UMI pairs per population (length of library), compare the number of sequences per UMI per population (length of R1 and R2 lists)
+
+# Script 6: align sequences to reference gene
+- input: libraries of UMI/sequences, reference gene.gb
