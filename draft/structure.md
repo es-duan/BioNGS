@@ -38,7 +38,7 @@ BioNGS Pipeline
   - Basic Statistics(table) 
     - Total Sequences(reads)
     - Total Bases
-    - Sequence length(a range) + median or IQR
+    - Sequence length(a range) + median or IQR  **impossible and meaningless! Because the reads length is clustered in 250bp and contribute to about 90% of all length.
     - Q30 ratio
     - Sequences flagged as poor quality
 
@@ -66,11 +66,12 @@ BioNGS Pipeline
 ##### which will be report? 
 1. whole fastq file after identifing the unmatched reads
   - total read number
-  - matched reads vs unmatched reads vs shortreads(reads shorter than median of the raw data which will be set as default) (bar chart)
+  - matched reads vs unmatched reads vs shortreads ~~(reads shorter than median of the raw data which will be set as default) (bar chart)~~  
+    - ($\frac{\text{reads that are shorter than (maximum length of Illumina reads (250 bp))}}{2}$ probably can be set as the gate)
 
 2. each population fastq file(only for the matched reads)
 - pass/warning/fail dignosis from each section of FastQC(big table with all population for comparison)
-- read quantity for every population and short reads **(threshold is reads shorter than median of the matched data in each group which will be set as default)**
+- read quantity for every population and short reads ~~(threshold is reads shorter than median of the matched data in each group which will be set as default)~~ **up to be decided**
   - plot all plot below and compair them:
     - Per base sequence quality
     - Per sequence quality scores
@@ -90,18 +91,18 @@ BioNGS Pipeline
 #### 2.5.2. manual Trimming by population
 
 
-#### 2.5.1. automatic filter by total
+#### 2.5.1. automatic filter by total  **threshold up to be decided**
 - drop the shorter reads < threshold 
-  - calculate total read length distributions' median
+  - calculate total read length distributions' **median**
   - discard the read
 - drop the reads with N > threshold
 
 #### 2.5.2. manual filter by population
 - drop the shorter reads < threshold 
   - for each population
-    - calculate read length distributions' median
-    - min_len = max( floor(median - 1.5 × IQR) or floor(median), hard_min_len )
-      - if population reads < gate, go back to global median reads and report
+    - calculate read length distributions' **median**
+    - min_len = max( floor(**median** - 1.5 × IQR) or floor(**median**), hard_min_len )
+      - if population reads < gate, go back to global **median** reads and report
 - drop the reads with N > threshold
 
 #### 2.6. UMI collapsing / grouping
