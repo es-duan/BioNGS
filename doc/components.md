@@ -40,14 +40,14 @@ name: check_index_quality.py
 - dependencies: script 2 must be run
 
 # Script 4: create a library of UMI reads for each population
--name: demultiplex_UMI.py
+- name: demultiplex_UMI.py
 - input: demultiplexed population fastq files, UMI primer sequences
-- output: library where keys are UMI pairs and values are a list of a list of  R1 and R2 trimmed sequences that match that UMI
+- output: library where keys are UMI pairs and values are a list of a list of  R1 and R2 trimmed sequences that match that UMI. Save these libraries in the respective demultiplexing/population folders, named P{population number}_UMI_library
 - dependencies: script 2
-- description: take the demultiplexed fastq file for each population. Detect the UMI sequence be aligning to the primer sequence (the UMI is the 10 N bps on the primer) to each read. For each unique UMI, create a new key in a library. Then, loop though the the R1 and R2 files, detect UMIs, trim the primer (including index and UMI) from each read and place it in the respective R1 and R2 list for its UMI. Save the outputted list
+- description: Loop through the demultiplexed fastq file for each population. Detect the UMI sequence by aligning to the primer sequence (the UMI is the 10 N bps on the primer) to each read. Forward UMIs are detected from R1, and reverse UMIs from R2. For each unique forward and reverse UMI pair, create a new key in a library. Store the sequences as under their respective UMI pair key. There should be one list of R1 reads and a corresponding list of R2 reads for each UMI. The R1 and R2 lists should be the same length and in order (ids should match).
 
 # Script 5: check quality of UMI data
-- name: check_UMI_quality.py
+- name: quality_check_UMI.py
 - input: libraries of UMI/sequences for each population
 - output: bar plot comparing the number of UMIs/population and reads per UMI per population
 - dependences: script 4
@@ -57,7 +57,7 @@ name: check_index_quality.py
 - name: align_reads.py
 - input: libraries of UMI/sequences, reference gene.gb
 - output: sequences trimmed to be without UMI, leaving only a gene sequence homologous to the reference gene, that are also aligned with the reference gene-- UMI, mutation, and frequency
-- dependencies: script 4 (and 5)
+- dependencies: script 4
 - alignment is achieved by a biopython alignment function
 
 # Script 7: 

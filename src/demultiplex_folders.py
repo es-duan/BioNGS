@@ -78,7 +78,8 @@ def create_demultiplex_folders(experiment_name):
         reader = csv.DictReader(csvfile)
         
         for row in reader:
-            population = row['GW_name']
+            gw_name = row['GW_name']
+            population = f"P{row['Population']}"
             
             # Create folder for this population
             pop_folder = os.path.join(output_dir, population)
@@ -92,7 +93,7 @@ def create_demultiplex_folders(experiment_name):
             open(r1_file, 'w').close()
             open(r2_file, 'w').close()
             
-            print(f"Created folder and files for population: {population}")
+            print(f"Created folder and files for population: {population} (GW_name: {gw_name})")
             print(f"  R1 index: {row['R1_index']}, R2 index: {row['R2_index']}")
     
     print(f"\nAll population folders created in: {output_dir}")
