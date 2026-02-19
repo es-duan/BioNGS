@@ -1,0 +1,267 @@
+LOCUS       rpoBsequence            4029 bp    DNA     linear   CON 06-AUG-2024
+DEFINITION  Escherichia coli str. K-12 substr. MG1655, rpoB.
+ACCESSION   NC_000913
+VERSION     NC_000913.3
+DBLINK      BioProject: PRJNA57779
+            BioSample: SAMN02604091
+KEYWORDS    RefSeq.
+SOURCE      Escherichia coli str. K-12 substr. MG1655
+  ORGANISM  Escherichia coli str. K-12 substr. MG1655
+            Bacteria; Pseudomonadota; Gammaproteobacteria; Enterobacterales;
+            Enterobacteriaceae; Escherichia.
+REFERENCE   1  (bases 1 to 4029)
+  AUTHORS   Riley,M., Abe,T., Arnaud,M.B., Berlyn,M.K., Blattner,F.R.,
+            Chaudhuri,R.R., Glasner,J.D., Horiuchi,T., Keseler,I.M., Kosuge,T.,
+            Mori,H., Perna,N.T., Plunkett,G. III, Rudd,K.E., Serres,M.H.,
+            Thomas,G.H., Thomson,N.R., Wishart,D. and Wanner,B.L.
+  TITLE     Escherichia coli K-12: a cooperatively developed annotation
+            snapshot--2005
+  JOURNAL   Nucleic Acids Res. 34 (1), 1-9 (2006)
+  PUBMED    16397293
+  REMARK    Publication Status: Online-Only
+REFERENCE   2  (bases 1 to 4029)
+  AUTHORS   Hayashi,K., Morooka,N., Yamamoto,Y., Fujita,K., Isono,K., Choi,S.,
+            Ohtsubo,E., Baba,T., Wanner,B.L., Mori,H. and Horiuchi,T.
+  TITLE     Highly accurate genome sequences of Escherichia coli K-12 strains
+            MG1655 and W3110
+  JOURNAL   Mol. Syst. Biol. 2, 2006 (2006)
+  PUBMED    16738553
+REFERENCE   3  (bases 1 to 4029)
+  AUTHORS   Blattner,F.R., Plunkett,G. III, Bloch,C.A., Perna,N.T., Burland,V.,
+            Riley,M., Collado-Vides,J., Glasner,J.D., Rode,C.K., Mayhew,G.F.,
+            Gregor,J., Davis,N.W., Kirkpatrick,H.A., Goeden,M.A., Rose,D.J.,
+            Mau,B. and Shao,Y.
+  TITLE     The complete genome sequence of Escherichia coli K-12
+  JOURNAL   Science 277 (5331), 1453-1462 (1997)
+  PUBMED    9278503
+REFERENCE   4  (bases 1 to 4029)
+  AUTHORS   Arnaud,M., Berlyn,M.K.B., Blattner,F.R., Galperin,M.Y.,
+            Glasner,J.D., Horiuchi,T., Kosuge,T., Mori,H., Perna,N.T.,
+            Plunkett,G. III, Riley,M., Rudd,K.E., Serres,M.H., Thomas,G.H. and
+            Wanner,B.L.
+  TITLE     Workshop on Annotation of Escherichia coli K-12
+  JOURNAL   Unpublished
+  REMARK    Woods Hole, Mass., on 14-18 November 2003 (sequence corrections)
+REFERENCE   5  (bases 1 to 4029)
+  AUTHORS   Glasner,J.D., Perna,N.T., Plunkett,G. III, Anderson,B.D.,
+            Bockhorst,J., Hu,J.C., Riley,M., Rudd,K.E. and Serres,M.H.
+  TITLE     ASAP: Escherichia coli K-12 strain MG1655 version m56
+  JOURNAL   Unpublished
+  REMARK    ASAP download 10 June 2004 (annotation updates)
+REFERENCE   6  (bases 1 to 4029)
+  AUTHORS   Hayashi,K., Morooka,N., Mori,H. and Horiuchi,T.
+  TITLE     A more accurate sequence comparison between genomes of Escherichia
+            coli K12 W3110 and MG1655 strains
+  JOURNAL   Unpublished
+  REMARK    GenBank accessions AG613214 to AG613378 (sequence corrections)
+REFERENCE   7  (bases 1 to 4029)
+  AUTHORS   Perna,N.T.
+  TITLE     Escherichia coli K-12 MG1655 yqiK-rfaE intergenic region, genomic
+            sequence correction
+  JOURNAL   Unpublished
+  REMARK    GenBank accession AY605712 (sequence corrections)
+REFERENCE   8  (bases 1 to 4029)
+  AUTHORS   Rudd,K.E.
+  TITLE     A manual approach to accurate translation start site annotation: an
+            E. coli K-12 case study
+  JOURNAL   Unpublished
+REFERENCE   9  (bases 1 to 4029)
+  CONSRTM   NCBI Genome Project
+  TITLE     Direct Submission
+  JOURNAL   Submitted (08-MAR-2022) National Center for Biotechnology
+            Information, NIH, Bethesda, MD 20894, USA
+REFERENCE   10  (bases 1 to 4029)
+  AUTHORS   Blattner,F.R. and Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (30-JUL-2014) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+  REMARK    Protein update by submitter
+REFERENCE   11  (bases 1 to 4029)
+  AUTHORS   Blattner,F.R. and Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (15-NOV-2013) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+  REMARK    Protein update by submitter
+REFERENCE   12  (bases 1 to 4029)
+  AUTHORS   Blattner,F.R. and Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (26-SEP-2013) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+  REMARK    Sequence update by submitter
+REFERENCE   13  (bases 1 to 4029)
+  AUTHORS   Rudd,K.E.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (06-FEB-2013) Department of Biochemistry and Molecular
+            Biology, University of Miami Miller School of Medicine, 118 Gautier
+            Bldg., Miami, FL 33136, USA
+  REMARK    Sequence update by submitter
+REFERENCE   14  (bases 1 to 4029)
+  AUTHORS   Rudd,K.E.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (24-APR-2007) Department of Biochemistry and Molecular
+            Biology, University of Miami Miller School of Medicine, 118 Gautier
+            Bldg., Miami, FL 33136, USA
+  REMARK    Annotation update from ecogene.org as a multi-database
+            collaboration
+REFERENCE   15  (bases 1 to 4029)
+  AUTHORS   Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (07-FEB-2006) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+  REMARK    Protein updates by submitter
+REFERENCE   16  (bases 1 to 4029)
+  AUTHORS   Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (10-JUN-2004) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+  REMARK    Sequence update by submitter
+REFERENCE   17  (bases 1 to 4029)
+  AUTHORS   Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (13-OCT-1998) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+REFERENCE   18  (bases 1 to 4029)
+  AUTHORS   Blattner,F.R. and Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (02-SEP-1997) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+REFERENCE   19  (bases 1 to 4029)
+  AUTHORS   Blattner,F.R. and Plunkett,G. III.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (16-JAN-1997) Laboratory of Genetics, University of
+            Wisconsin, 425G Henry Mall, Madison, WI 53706-1580, USA
+COMMENT     PROVISIONAL REFSEQ: This record has not yet been subject to final  
+            NCBI review. The reference sequence is identical to U00096.        
+                                                                               
+            On Nov 3, 2013 this sequence version replaced NC_000913.2.         
+            Changes to proteins and annotation made on March 7, 2022.  Current 
+            U00096 annotation updates are derived from EcoCyc                  
+            https://ecocyc.org/.  Suggestions for updates can be sent to       
+            biocyc-support@ai.sri.com. These updates are being generated from a
+            collaboration  that includes EcoCyc, the University of Wisconsin,  
+            UniProtKB/Swiss-Prot, and the National Center for Biotechnology    
+            Information (NCBI).                                                
+            COMPLETENESS: full length.
+FEATURES             Location/Qualifiers
+     source          1..4029
+                     /organism="Escherichia coli str. K-12 substr. MG1655"
+                     /mol_type="genomic DNA"
+                     /strain="K-12"
+                     /sub_strain="MG1655"
+                     /db_xref="taxon:511145"
+     gene            1..4029
+                     /gene="rpoB"
+                     /locus_tag="b3987"
+                     /gene_synonym="ECK3978; ftsR; groN; nitB; rif; ron; sdgB;
+                     stl; stv; tabD"
+                     /db_xref="ASAP:ABE-0013041"
+                     /db_xref="ECOCYC:EG10894"
+                     /db_xref="GeneID:948488"
+     CDS             1..4029
+                     /gene="rpoB"
+                     /locus_tag="b3987"
+                     /gene_synonym="ECK3978; ftsR; groN; nitB; rif; ron; sdgB;
+                     stl; stv; tabD"
+                     /EC_number="2.7.7.6"
+                     /codon_start=1
+                     /transl_table=11
+                     /product="RNA polymerase subunit beta"
+                     /protein_id="NP_418414.1"
+                     /db_xref="UniProtKB/Swiss-Prot:P0A8V2"
+                     /db_xref="ASAP:ABE-0013041"
+                     /db_xref="ECOCYC:EG10894"
+                     /db_xref="GeneID:948488"
+                     /translation="MVYSYTEKKRIRKDFGKRPQVLDVPYLLSIQLDSFQKFIEQDPE
+                     GQYGLEAAFRSVFPIQSYSGNSELQYVSYRLGEPVFDVQECQIRGVTYSAPLRVKLRL
+                     VIYEREAPEGTVKDIKEQEVYMGEIPLMTDNGTFVINGTERVIVSQLHRSPGVFFDSD
+                     KGKTHSSGKVLYNARIIPYRGSWLDFEFDPKDNLFVRIDRRRKLPATIILRALNYTTE
+                     QILDLFFEKVIFEIRDNKLQMELVPERLRGETASFDIEANGKVYVEKGRRITARHIRQ
+                     LEKDDVKLIEVPVEYIAGKVVAKDYIDESTGELICAANMELSLDLLAKLSQSGHKRIE
+                     TLFTNDLDHGPYISETLRVDPTNDRLSALVEIYRMMRPGEPPTREAAESLFENLFFSE
+                     DRYDLSAVGRMKFNRSLLREEIEGSGILSKDDIIDVMKKLIDIRNGKGEVDDIDHLGN
+                     RRIRSVGEMAENQFRVGLVRVERAVKERLSLGDLDTLMPQDMINAKPISAAVKEFFGS
+                     SQLSQFMDQNNPLSEITHKRRISALGPGGLTRERAGFEVRDVHPTHYGRVCPIETPEG
+                     PNIGLINSLSVYAQTNEYGFLETPYRKVTDGVVTDEIHYLSAIEEGNYVIAQANSNLD
+                     EEGHFVEDLVTCRSKGESSLFSRDQVDYMDVSTQQVVSVGASLIPFLEHDDANRALMG
+                     ANMQRQAVPTLRADKPLVGTGMERAVAVDSGVTAVAKRGGVVQYVDASRIVIKVNEDE
+                     MYPGEAGIDIYNLTKYTRSNQNTCINQMPCVSLGEPVERGDVLADGPSTDLGELALGQ
+                     NMRVAFMPWNGYNFEDSILVSERVVQEDRFTTIHIQELACVSRDTKLGPEEITADIPN
+                     VGEAALSKLDESGIVYIGAEVTGGDILVGKVTPKGETQLTPEEKLLRAIFGEKASDVK
+                     DSSLRVPNGVSGTVIDVQVFTRDGVEKDKRALEIEEMQLKQAKKDLSEELQILEAGLF
+                     SRIRAVLVAGGVEAEKLDKLPRDRWLELGLTDEEKQNQLEQLAEQYDELKHEFEKKLE
+                     AKRRKITQGDDLAPGVLKIVKVYLAVKRRIQPGDKMAGRHGNKGVISKINPIEDMPYD
+                     ENGTPVDIVLNPLGVPSRMNIGQILETHLGMAAKGIGDKINAMLKQQQEVAKLREFIQ
+                     RAYDLGADVRQKVDLSTFSDEEVMRLAENLRKGMPIATPVFDGAKEAEIKELLKLGDL
+                     PTSGQIRLYDGRTGEQFERPVTVGYMYMLKLNHLVDDKMHARSTGSYSLVTQQPLGGK
+                     AQFGGQRFGEMEVWALEAYGAAYTLQEMLTVKSDDVNGRTKMYKNIVDGNHQMEPGMP
+                     ESFNVLLKEIRSLGINIELEDE"
+ORIGIN      
+        1 atggtttact cctataccga gaaaaaacgt attcgtaagg attttggtaa acgtccacaa
+       61 gttctggatg taccttatct cctttctatc cagcttgact cgtttcagaa atttatcgag
+      121 caagatcctg aagggcagta tggtctggaa gctgctttcc gttccgtatt cccgattcag
+      181 agctacagcg gtaattccga gctgcaatac gtcagctacc gccttggcga accggtgttt
+      241 gacgtccagg aatgtcaaat ccgtggcgtg acctattccg caccgctgcg cgttaaactg
+      301 cgtctggtga tctatgagcg cgaagcgccg gaaggcaccg taaaagacat taaagaacaa
+      361 gaagtctaca tgggcgaaat tccgctcatg acagacaacg gtacctttgt tatcaacggt
+      421 actgagcgtg ttatcgtttc ccagctgcac cgtagtccgg gcgtcttctt tgactccgac
+      481 aaaggtaaaa cccactcttc gggtaaagtg ctgtataacg cgcgtatcat cccttaccgt
+      541 ggttcctggc tggacttcga attcgatccg aaggacaacc tgttcgtacg tatcgaccgt
+      601 cgccgtaaac tgcctgcgac catcattctg cgcgccctga actacaccac agagcagatc
+      661 ctcgacctgt tctttgaaaa agttatcttt gaaatccgtg ataacaagct gcagatggaa
+      721 ctggtgccgg aacgcctgcg tggtgaaacc gcatcttttg acatcgaagc taacggtaaa
+      781 gtgtacgtag aaaaaggccg ccgtatcact gcgcgccaca ttcgccagct ggaaaaagac
+      841 gacgtcaaac tgatcgaagt cccggttgag tacatcgcag gtaaagtggt tgctaaagac
+      901 tatattgatg agtctaccgg cgagctgatc tgcgcagcga acatggagct gagcctggat
+      961 ctgctggcta agctgagcca gtctggtcac aagcgtatcg aaacgctgtt caccaacgat
+     1021 ctggatcacg gcccatatat ctctgaaacc ttacgtgtcg acccaactaa cgaccgtctg
+     1081 agcgcactgg tagaaatcta ccgcatgatg cgccctggcg agccgccgac tcgtgaagca
+     1141 gctgaaagcc tgttcgagaa cctgttcttc tccgaagacc gttatgactt gtctgcggtt
+     1201 ggtcgtatga agttcaaccg ttctctgctg cgcgaagaaa tcgaaggttc cggtatcctg
+     1261 agcaaagacg acatcattga tgttatgaaa aagctcatcg atatccgtaa cggtaaaggc
+     1321 gaagtcgatg atatcgacca cctcggcaac cgtcgtatcc gttccgttgg cgaaatggcg
+     1381 gaaaaccagt tccgcgttgg cctggtacgt gtagagcgtg cggtgaaaga gcgtctgtct
+     1441 ctgggcgatc tggataccct gatgccacag gatatgatca acgccaagcc gatttccgca
+     1501 gcagtgaaag agttcttcgg ttccagccag ctgtctcagt ttatggacca gaacaacccg
+     1561 ctgtctgaga ttacgcacaa acgtcgtatc tccgcactcg gcccaggcgg tctgacccgt
+     1621 gaacgtgcag gcttcgaagt tcgagacgta cacccgactc actacggtcg cgtatgtcca
+     1681 atcgaaaccc ctgaaggtcc gaacatcggt ctgatcaact ctctgtccgt gtacgcacag
+     1741 actaacgaat acggcttcct tgagactccg tatcgtaaag tgaccgacgg tgttgtaact
+     1801 gacgaaattc actacctgtc tgctatcgaa gaaggcaact acgttatcgc ccaggcgaac
+     1861 tccaacttgg atgaagaagg ccacttcgta gaagacctgg taacttgccg tagcaaaggc
+     1921 gaatccagct tgttcagccg cgaccaggtt gactacatgg acgtatccac ccagcaggtg
+     1981 gtatccgtcg gtgcgtccct gatcccgttc ctggaacacg atgacgccaa ccgtgcattg
+     2041 atgggtgcga acatgcaacg tcaggccgtt ccgactctgc gcgctgataa gccgctggtt
+     2101 ggtactggta tggaacgtgc tgttgccgtt gactccggtg taactgcggt agctaaacgt
+     2161 ggtggtgtcg ttcagtacgt ggatgcttcc cgtatcgtta tcaaagttaa cgaagacgag
+     2221 atgtatccgg gtgaagcagg tatcgacatc tacaacctga ccaaatacac ccgttctaac
+     2281 cagaacacct gtatcaacca gatgccgtgt gtgtctctgg gtgaaccggt tgaacgtggc
+     2341 gacgtgctgg cagacggtcc gtccaccgac ctcggtgaac tggcgcttgg tcagaacatg
+     2401 cgcgtagcgt tcatgccgtg gaatggttac aacttcgaag actccatcct cgtatccgag
+     2461 cgtgttgttc aggaagaccg tttcaccacc atccacattc aggaactggc gtgtgtgtcc
+     2521 cgtgacacca agctgggtcc ggaagagatc accgctgaca tcccgaacgt gggtgaagct
+     2581 gcgctctcca aactggatga atccggtatc gtttacattg gtgcggaagt gaccggtggc
+     2641 gacattctgg ttggtaaggt aacgccgaaa ggtgaaactc agctgacccc agaagaaaaa
+     2701 ctgctgcgtg cgatcttcgg tgagaaagcc tctgacgtta aagactcttc tctgcgcgta
+     2761 ccaaacggtg tatccggtac ggttatcgac gttcaggtct ttactcgcga tggcgtagaa
+     2821 aaagacaaac gtgcgctgga aatcgaagaa atgcagctca aacaggcgaa gaaagacctg
+     2881 tctgaagaac tgcagatcct cgaagcgggt ctgttcagcc gtatccgtgc tgtgctggta
+     2941 gccggtggcg ttgaagctga gaagctcgac aaactgccgc gcgatcgctg gctggagctg
+     3001 ggcctgacag acgaagagaa acaaaatcag ctggaacagc tggctgagca gtatgacgaa
+     3061 ctgaaacacg agttcgagaa gaaactcgaa gcgaaacgcc gcaaaatcac ccagggcgac
+     3121 gatctggcac cgggcgtgct gaagattgtt aaggtatatc tggcggttaa acgccgtatc
+     3181 cagcctggtg acaagatggc aggtcgtcac ggtaacaagg gtgtaatttc taagatcaac
+     3241 ccgatcgaag atatgcctta cgatgaaaac ggtacgccgg tagacatcgt actgaacccg
+     3301 ctgggcgtac cgtctcgtat gaacatcggt cagatcctcg aaacccacct gggtatggct
+     3361 gcgaaaggta tcggcgacaa gatcaacgcc atgctgaaac agcagcaaga agtcgcgaaa
+     3421 ctgcgcgaat tcatccagcg tgcgtacgat ctgggcgctg acgttcgtca gaaagttgac
+     3481 ctgagtacct tcagcgatga agaagttatg cgtctggctg aaaacctgcg caaaggtatg
+     3541 ccaatcgcaa cgccggtgtt cgacggtgcg aaagaagcag aaattaaaga gctgctgaaa
+     3601 cttggcgacc tgccgacttc cggtcagatc cgcctgtacg atggtcgcac tggtgaacag
+     3661 ttcgagcgtc cggtaaccgt tggttacatg tacatgctga aactgaacca cctggtcgac
+     3721 gacaagatgc acgcgcgttc caccggttct tacagcctgg ttactcagca gccgctgggt
+     3781 ggtaaggcac agttcggtgg tcagcgtttc ggggagatgg aagtgtgggc gctggaagca
+     3841 tacggcgcag catacaccct gcaggaaatg ctcaccgtta agtctgatga cgtgaacggt
+     3901 cgtaccaaga tgtataaaaa catcgtggac ggcaaccatc agatggagcc gggcatgcca
+     3961 gaatccttca acgtattgtt gaaagagatt cgttcgctgg gtatcaacat cgaactggaa
+     4021 gacgagtaa
+//
