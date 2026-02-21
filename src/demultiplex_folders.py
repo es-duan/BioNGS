@@ -39,13 +39,7 @@ def find_multiplexing_csv(experiment_name):
         raise FileNotFoundError(f"Experiment directory not found: {input_dir}")
     
     # Look for CSV files with 'multiplexing' in the name
-    csv_files = glob.glob(os.path.join(input_dir, "*multiplexing*.csv"))
-    
-    if csv_files:
-        return csv_files[0]
-    
-    # If no multiplexing CSV found, look for any CSV file
-    csv_files = glob.glob(os.path.join(input_dir, "*.csv"))
+    csv_files = glob.glob(os.path.join(input_dir, "*multiplexing_info*.csv"))
     
     if csv_files:
         return csv_files[0]

@@ -2,11 +2,11 @@
 """
 Script 5: Check quality of UMI data
 
-This script analyzes the quality of UMI libraries created by Script 4 (demultiplex_UMI.py).
+This script analyzes the quality of UMI dictionaries created by Script 4 (demultiplex_UMI.py).
 It generates visualizations comparing the number of UMIs per population and the distribution 
 of reads per UMI.
 
-Input: UMI library pickle files from Outputs/{experiment}/demultiplexing/P{Population}/
+Input: UMI dictionary pickle files from Outputs/{experiment}/demultiplexing/P{Population}/
 Output: Bar plots saved to Outputs/{experiment}/UMI_quality/
 
 Dependencies: Script 4 (demultiplex_UMI.py) must be run first
@@ -44,7 +44,7 @@ def find_umi_libraries(experiment_name, output_base='Outputs'):
         raise FileNotFoundError(f"Demultiplexing directory not found: {demultiplex_dir}")
     
     libraries = {}
-    pattern = os.path.join(demultiplex_dir, 'P*', '*_UMI_library.pkl')
+    pattern = os.path.join(demultiplex_dir, 'P*', '*_UMI_dict.pkl')
     
     for lib_path in sorted(glob.glob(pattern)):
         # Extract population name from path (e.g., P1)
@@ -54,9 +54,9 @@ def find_umi_libraries(experiment_name, output_base='Outputs'):
     return libraries
 
 
-def load_umi_library(library_path):
+def load_umi_dict(library_path):
     """
-    Load a UMI library from a pickle file.
+    Load a UMI dictionary from a pickle file.
     
     Parameters:
     -----------
@@ -66,21 +66,21 @@ def load_umi_library(library_path):
     Returns:
     --------
     dict
-        UMI library: {(forward_UMI, reverse_UMI): {'R1': [...], 'R2': [...]}}
+        UMI dictionary: {(forward_UMI, reverse_UMI): {'R1': [...], 'R2': [...]}}
     """
     with open(library_path, 'rb') as f:
-        library = pickle.load(f)
-    return library
+        umi_dict = pickle.load(f)
+    return umi_dict
 
 
-def analyze_umi_library(library):
+def analyze_umi_dict(umi_dict):
     """
-    Analyze a UMI library and extract quality metrics.
+    Analyze a UMI dictionary and extract quality metrics.
     
     Parameters:
     -----------
-    library : dict
-        UMI library structure
+    umi_dict : dict
+        UMI dictionary structure
         
     Returns:
     --------
@@ -88,16 +88,16 @@ def analyze_umi_library(library):
         Dictionary containing:
         - num_umis: Total number of unique UMI pairs
         - reads_per_umi: List of read counts for each UMI
-        - total_reads: Total number of reads in library
+        - total_reads: Total number of reads in dictionary
     """
     reads_per_umi = []
     
-    for umi_pair, sequences in library.items():
+    for umi_pair, sequences in umi_dict.items():
         num_reads = len(sequences['R1'])
         reads_per_umi.append(num_reads)
     
     return {
-        'num_umis': len(library),
+        'num_umis': len(umi_dict),
         'reads_per_umi': reads_per_umi,
         'total_reads': sum(reads_per_umi) if reads_per_umi else 0
     }
@@ -236,15 +236,15 @@ def check_umi_quality(experiment_name):
     
     print(f"Found {len(libraries)} population(s)")
     
-    # Load and analyze libraries
-    print("\nAnalyzing UMI libraries...")
+    # Load and analyze dictionaries
+    print("\nAnalyzing UMI dictionaries...")
     libraries_data = {}
     
     for population, lib_path in libraries.items():
         print(f"  Loading {population}...")
         try:
-            library = load_umi_library(lib_path)
-            libraries_data[population] = analyze_umi_library(library)
+            umi_dict = load_umi_dict(lib_path)
+            libraries_data[population] = analyze_umi_dict(umi_dict)
             print(f"    UMI pairs: {libraries_data[population]['num_umis']}, "
                   f"Total reads: {libraries_data[population]['total_reads']}")
         except Exception as e:

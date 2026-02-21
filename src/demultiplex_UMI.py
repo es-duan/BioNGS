@@ -1,10 +1,10 @@
 """
-Script 4: Create a library of UMI reads for each population
+Script 4: Create a dictionary of UMI reads for each population
 
 Input: Demultiplexed population fastq files, UMI primer sequences from CSV
-Output: Library where keys are UMI pairs and values are lists of R1 and R2 trimmed sequences
-        that match that UMI. Libraries are saved in respective demultiplexing/population
-        folders as pickle files named P{population_number}_UMI_library
+Output: Dictionary where keys are UMI pairs and values are lists of R1 and R2 trimmed sequences
+        that match that UMI. Dictionaries are saved in respective demultiplexing/population
+        folders as pickle files named P{population_number}_UMI_dict
 Dependencies: Script 2 (demultiplex_index.py) must be run first
 Description: For each population, detect UMI sequences by aligning to primer sequences
              (the UMI is the 10 N bps on the primer). Forward UMIs are detected from R1,
@@ -209,19 +209,13 @@ def find_umi_primers_csv(experiment_name):
     if csv_files:
         return csv_files[0]
     
-    # Also look for files with 'primer' in the name
-    csv_files = glob.glob(os.path.join(input_dir, "*primer*.csv"))
-    
-    if csv_files:
-        return csv_files[0]
-    
     raise FileNotFoundError(f"No UMI primers CSV file found in {input_dir}. "
                            f"Expected file with 'UMI' or 'primer' in the name.")
 
 
-def create_umi_library(population_folder, population_num, gw_name, forward_primer_info, reverse_primer_info):
+def create_umi_dict(population_folder, population_num, gw_name, forward_primer_info, reverse_primer_info):
     """
-    Create a UMI library for a single population by processing its fastq files.
+    Create a UMI dictionary for a single population by processing its fastq files.
     
     Parameters:
     -----------
@@ -411,8 +405,8 @@ def process_all_populations(experiment_name):
             print(f"Warning: Population folder not found: {population_folder}")
             continue
         
-        # Create UMI library
-        umi_library = create_umi_library(
+        # Create UMI dictionary
+        umi_dict = create_umi_dict(
             population_folder,
             population_num,
             gw_name,
@@ -420,14 +414,14 @@ def process_all_populations(experiment_name):
             primers['reverse']
         )
         
-        # Save library as pickle file
-        lib_filename = f"{population}_UMI_library.pkl"
+        # Save dictionary as pickle file
+        lib_filename = f"{population}_UMI_dict.pkl"
         lib_path = os.path.join(population_folder, lib_filename)
         
         with open(lib_path, 'wb') as f:
-            pickle.dump(umi_library, f)
+            pickle.dump(umi_dict, f)
         
-        print(f"  Saved UMI library: {lib_filename}\n")
+        print(f"  Saved UMI dictionary: {lib_filename}\n")
         saved_count += 1
     
     return saved_count > 0
@@ -448,7 +442,7 @@ def main():
     
     if success:
         print("="*60)
-        print("UMI library creation complete!")
+        print("UMI dictionary creation complete!")
         print("="*60)
 
 
