@@ -39,25 +39,25 @@ name: check_index_quality.py
 - output: histogram of read lengths from input fastq files; bar plot with the number of reads in each population fastq, short_read, and unmatched_read files (one per input fastq)
 - dependencies: script 2 must be run
 
-# Script 4: create a library of UMI reads for each population
+# Script 4: create a dictionary of UMI reads for each population
 - name: demultiplex_UMI.py
 - input: demultiplexed population fastq files, UMI primer sequences
-- output: library where keys are UMI pairs and values are a list of a list of  R1 and R2 trimmed sequences that match that UMI. Save these libraries in the respective demultiplexing/population folders, named P{population number}_UMI_library
+- output: dictionary where keys are UMI pairs and values are a list of a list of  R1 and R2 trimmed sequences that match that UMI. Save these dictionaries in the respective demultiplexing/population folders, named P{population number}_UMI_dict
 - dependencies: script 2
 - description: Loop through the demultiplexed fastq file for each population. Detect the UMI sequence by aligning to the primer sequence (the UMI is the 10 N bps on the primer) to each read. Forward UMIs are detected from R1, and reverse UMIs from R2. For each unique forward and reverse UMI pair, create a new key in a library. Store the sequences as under their respective UMI pair key. There should be one list of R1 reads and a corresponding list of R2 reads for each UMI. The R1 and R2 lists should be the same length and in order (ids should match).
 
 # Script 5: check quality of UMI data
 - name: quality_check_UMI.py
-- input: libraries of UMI/sequences for each population
+- input: dictionaries of UMI/sequences for each population
 - output: bar plot comparing the number of UMIs/population and reads per UMI per population
 - dependences: script 4
-- description: compare the number of UMI pairs per population (length of library), compare the number of sequences per UMI per population (length of R1 and R2 lists)
+- description: compare the number of UMI pairs per population (length of dictionary), compare the number of sequences per UMI per population (length of R1 and R2 lists)
 
 # Script 6: align sequences to reference gene
 - name: align_reads.py
-- input: libraries of UMI/sequences, reference gene.gb
-- output: sequences trimmed to be without UMI, leaving only a gene sequence homologous to the reference gene, that are also aligned with the reference gene-- UMI, mutation, and frequency
+- input: dictionaries of UMI/sequences, reference gene.fasta (converted into an index for bowtie2 alignment)
+- output: 
 - dependencies: script 4
-- alignment is achieved by a biopython alignment function
+- description: for each UMI in the dictionary
 
 # Script 7: 

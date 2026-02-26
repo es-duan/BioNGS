@@ -120,8 +120,8 @@ def extract_umi_from_sequence(sequence, primer_info):
     # Extract the UMI
     umi = sequence_str[umi_pos:umi_pos + 10]
     
-    # Calculate the trim position (position after "before" + 10 N's)
-    trim_pos = umi_pos + 10
+    # Calculate the trim position (position after entire primer: "before" + UMI + "after")
+    trim_pos = umi_pos + 10 + len(primer_after)
     
     return umi, trim_pos
 
@@ -242,6 +242,10 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     r1_fastq = os.path.join(population_folder, f"{population}_R1.fastq")
     r2_fastq = os.path.join(population_folder, f"{population}_R2.fastq")
     
+    # Define unmatched UMI file paths
+    unmatched_r1_fastq = os.path.join(population_folder, f"{population}_unmatched_UMI_R1.fastq")
+    unmatched_r2_fastq = os.path.join(population_folder, f"{population}_unmatched_UMI_R2.fastq")
+    
     if not os.path.exists(r1_fastq) or not os.path.exists(r2_fastq):
         print(f"  Warning: Fastq files not found for {population}")
         return {}
@@ -251,13 +255,16 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     stats = {
         'total_reads': 0,
         'reads_with_umi': 0,
+        'unmatched_reads': 0,
         'unique_umis': 0
     }
     
     # Parse both fastq files simultaneously
     print(f"  Processing {population}...")
     
-    with open(r1_fastq, 'r') as r1_handle, open(r2_fastq, 'r') as r2_handle:
+    with open(r1_fastq, 'r') as r1_handle, open(r2_fastq, 'r') as r2_handle, \
+         open(unmatched_r1_fastq, 'w') as unmatched_r1_handle, \
+         open(unmatched_r2_fastq, 'w') as unmatched_r2_handle:
         r1_records = SeqIO.parse(r1_handle, 'fastq')
         r2_records = SeqIO.parse(r2_handle, 'fastq')
         
@@ -277,6 +284,10 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
             r2_result = extract_umi_from_sequence(r2_record.seq, reverse_primer_info)
             
             if r1_result is None or r2_result is None:
+                # Save unmatched sequences to separate fastq files
+                SeqIO.write(r1_record, unmatched_r1_handle, 'fastq')
+                SeqIO.write(r2_record, unmatched_r2_handle, 'fastq')
+                stats['unmatched_reads'] += 1
                 continue
             
             forward_umi, r1_trim_pos = r1_result
@@ -323,8 +334,9 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     print(f"    Summary for {population}:")
     print(f"      Total reads: {stats['total_reads']}")
     print(f"      Reads with UMI: {stats['reads_with_umi']}")
+    print(f"      Unmatched reads: {stats['unmatched_reads']}")
     print(f"      Unique UMI pairs: {stats['unique_umis']}")
-    if stats['total_reads'] > 0:
+    if stats['total_reads'] > 0 and stats['unique_umis'] > 0:
         print(f"      Mean reads per UMI: {stats['reads_with_umi'] / stats['unique_umis']:.1f}")
     
     return umi_library

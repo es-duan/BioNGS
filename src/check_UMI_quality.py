@@ -18,8 +18,8 @@ import pickle
 import glob
 import argparse
 from collections import Counter
-import matplotlib.pyplot as plt
-import numpy as np
+import altair as alt
+import pandas as pd
 
 
 def find_umi_libraries(experiment_name, output_base='Outputs'):
@@ -117,26 +117,59 @@ def create_umi_count_plot(libraries_data, output_dir):
     populations = sorted(libraries_data.keys())
     umi_counts = [libraries_data[pop]['num_umis'] for pop in populations]
     
-    plt.figure(figsize=(10, 6))
-    bars = plt.bar(populations, umi_counts, color='steelblue', edgecolor='black', alpha=0.7)
+    # Create DataFrame
+    df = pd.DataFrame({
+        'Population': populations,
+        'UMI_Count': umi_counts,
+        'Label': [f'{count}' for count in umi_counts]
+    })
+    
+    # Create bar chart
+    bars = alt.Chart(df).mark_bar(
+        opacity=0.7,
+        color='steelblue',
+        stroke='black',
+        strokeWidth=1
+    ).encode(
+        x=alt.X('Population:N', title='Population', sort=populations),
+        y=alt.Y('UMI_Count:Q', title='Number of Unique UMI Pairs'),
+        tooltip=[
+            alt.Tooltip('Population:N', title='Population'),
+            alt.Tooltip('UMI_Count:Q', title='UMI Count', format=',')
+        ]
+    )
     
     # Add value labels on top of bars
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(height)}',
-                ha='center', va='bottom', fontsize=10)
+    text = alt.Chart(df).mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-5,
+        fontSize=11
+    ).encode(
+        x=alt.X('Population:N', sort=populations),
+        y=alt.Y('UMI_Count:Q'),
+        text='Label:N'
+    )
     
-    plt.xlabel('Population', fontsize=12, fontweight='bold')
-    plt.ylabel('Number of Unique UMI Pairs', fontsize=12, fontweight='bold')
-    plt.title('Number of Unique UMI Pairs per Population', fontsize=14, fontweight='bold')
-    plt.grid(axis='y', alpha=0.3, linestyle='--')
-    plt.tight_layout()
+    # Combine layers
+    chart = (bars + text).properties(
+        width=500,
+        height=400,
+        title='Number of Unique UMI Pairs per Population'
+    ).configure_axis(
+        labelFontSize=11,
+        titleFontSize=12
+    ).configure_title(
+        fontSize=14
+    )
     
+    # Save as PNG
     output_path = os.path.join(output_dir, 'UMI_count_per_population.png')
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"  Saved: {output_path}")
-    plt.close()
+    try:
+        chart.save(output_path, scale_factor=2.0)
+        print(f"  Saved: {output_path}")
+    except Exception as e:
+        print(f"  Warning: Could not save PNG. Error: {e}")
 
 
 def create_reads_per_umi_plot(libraries_data, output_dir):
@@ -151,26 +184,50 @@ def create_reads_per_umi_plot(libraries_data, output_dir):
         Directory to save the plot
     """
     populations = sorted(libraries_data.keys())
-    reads_distributions = [libraries_data[pop]['reads_per_umi'] for pop in populations]
     
-    plt.figure(figsize=(12, 6))
-    bp = plt.boxplot(reads_distributions, labels=populations, patch_artist=True)
+    # Create DataFrame with all data points
+    data_rows = []
+    for pop in populations:
+        reads_per_umi = libraries_data[pop]['reads_per_umi']
+        for count in reads_per_umi:
+            data_rows.append({'Population': pop, 'Reads_per_UMI': count})
     
-    # Color the boxes
-    for patch in bp['boxes']:
-        patch.set_facecolor('lightblue')
-        patch.set_alpha(0.7)
+    df = pd.DataFrame(data_rows)
     
-    plt.xlabel('Population', fontsize=12, fontweight='bold')
-    plt.ylabel('Number of Reads per UMI', fontsize=12, fontweight='bold')
-    plt.title('Distribution of Reads per UMI Pair by Population', fontsize=14, fontweight='bold')
-    plt.grid(axis='y', alpha=0.3, linestyle='--')
-    plt.tight_layout()
+    # Create box plot
+    chart = alt.Chart(df).mark_boxplot(
+        color='lightblue',
+        opacity=0.7,
+        size=50
+    ).encode(
+        x=alt.X('Population:N', title='Population', sort=populations),
+        y=alt.Y('Reads_per_UMI:Q', title='Number of Reads per UMI'),
+        tooltip=[
+            alt.Tooltip('Population:N', title='Population'),
+            alt.Tooltip('min(Reads_per_UMI):Q', title='Min', format='.0f'),
+            alt.Tooltip('q1(Reads_per_UMI):Q', title='Q1', format='.0f'),
+            alt.Tooltip('median(Reads_per_UMI):Q', title='Median', format='.0f'),
+            alt.Tooltip('q3(Reads_per_UMI):Q', title='Q3', format='.0f'),
+            alt.Tooltip('max(Reads_per_UMI):Q', title='Max', format='.0f')
+        ]
+    ).properties(
+        width=600,
+        height=400,
+        title='Distribution of Reads per UMI Pair by Population'
+    ).configure_axis(
+        labelFontSize=11,
+        titleFontSize=12
+    ).configure_title(
+        fontSize=14
+    )
     
+    # Save as PNG
     output_path = os.path.join(output_dir, 'reads_per_UMI_distribution.png')
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"  Saved: {output_path}")
-    plt.close()
+    try:
+        chart.save(output_path, scale_factor=2.0)
+        print(f"  Saved: {output_path}")
+    except Exception as e:
+        print(f"  Warning: Could not save PNG. Error: {e}")
 
 
 def create_summary_statistics_plot(libraries_data, output_dir):
@@ -200,10 +257,11 @@ def create_summary_statistics_plot(libraries_data, output_dir):
             f.write(f"  Total reads: {data['total_reads']}\n")
             
             if reads_per_umi:
-                f.write(f"  Reads per UMI - Min: {min(reads_per_umi)}, ")
-                f.write(f"Max: {max(reads_per_umi)}, ")
-                f.write(f"Mean: {np.mean(reads_per_umi):.1f}, ")
-                f.write(f"Median: {np.median(reads_per_umi):.1f}\n")
+                reads_series = pd.Series(reads_per_umi)
+                f.write(f"  Reads per UMI - Min: {reads_series.min()}, ")
+                f.write(f"Max: {reads_series.max()}, ")
+                f.write(f"Mean: {reads_series.mean():.1f}, ")
+                f.write(f"Median: {reads_series.median():.1f}\n")
             f.write("\n")
     
     print(f"  Saved: {output_path}")

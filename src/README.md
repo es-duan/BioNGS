@@ -95,6 +95,56 @@ python demultiplex_index.py example
 
 ---
 
+## Script 3: check_index_quality.py
+
+Analyzes the quality of demultiplexing results from Script 2 and generates visualizations of read distributions and quality metrics.
+
+**Usage:**
+```bash
+python check_index_quality.py <experiment_name>
+```
+
+**Example:**
+```bash
+python check_index_quality.py example
+```
+
+**Input:**
+- Experiment name
+- Reads from the demultiplexing results directory: `Outputs/{experiment_name}/demultiplexing/`
+- Analyzes:
+  - Input fastq files from `input_data/{experiment_name}/`
+  - Population fastq files in each `P{Population}/` folder
+  - Short reads files (`{GW_name}_short_reads_R1.fastq` and `_R2.fastq`)
+  - Unmatched reads files (`{GW_name}_unmatched_reads_R1.fastq` and `_R2.fastq`)
+
+**Output:**
+- Creates output directory at `Outputs/{experiment_name}/index_quality/`
+- **Read length histograms**: PNG plots showing distribution of read lengths for R1 and R2
+  - Includes mean and median markers
+  - Samples up to 10,000 reads from each input file
+- **Read distribution bar plots**: Shows how reads were distributed across:
+  - Each population
+  - Short reads category
+  - Unmatched reads category
+  - Displays counts and percentages
+- **Summary report**: Text file (`index_quality_summary.txt`) with detailed statistics including:
+  - Total input reads
+  - Reads per population with percentages
+  - Short reads count and percentage
+  - Unmatched reads count and percentage
+  - Recovery rate (percentage of reads successfully categorized)
+
+**Visualizations:**
+- Uses Altair library for high-quality static visualizations
+- All plots saved as PNG files (with HTML fallback if PNG export fails)
+
+**Dependencies:**
+- Requires Script 2 (demultiplex_index.py) to be run first
+- Python packages: altair, pandas, biopython, vl-convert-python (for PNG export)
+
+---
+
 ## Script 4: demultiplex_UMI.py
 
 Detects and extracts UMI (Unique Molecular Identifier) sequences from demultiplexed reads, creating libraries organized by UMI pairs for each population.
@@ -132,6 +182,47 @@ python demultiplex_UMI.py example
 
 ---
 
+## Script 5: check_UMI_quality.py
+
+Analyzes the quality of UMI dictionaries created by Script 4 and generates visualizations comparing UMI distributions across populations.
+
+**Usage:**
+```bash
+python check_UMI_quality.py <experiment_name>
+```
+
+**Example:**
+```bash
+python check_UMI_quality.py example
+```
+
+**Input:**
+- Experiment name
+- UMI dictionary pickle files from `Outputs/{experiment_name}/demultiplexing/P{Population}/`
+- Reads all files matching pattern `*_UMI_dict.pkl`
+
+**Output:**
+- Creates output directory at `Outputs/{experiment_name}/UMI_quality/`
+- **UMI count bar plot**: PNG plot comparing the number of unique UMI pairs across populations
+- **Reads per UMI box plot**: PNG plot showing distribution of read counts per UMI for each population
+- **Summary statistics**: Displays mean and median reads per UMI for each population
+- **Text summary**: `UMI_quality_summary.txt` with detailed statistics
+
+**Quality Metrics:**
+- Number of unique UMI pairs per population
+- Distribution of reads per UMI (to assess sequencing depth and coverage)
+- Populations with very few UMIs or highly uneven read distribution may indicate quality issues
+
+**Visualizations:**
+- Uses Altair library for high-quality static visualizations
+- All plots saved as PNG files
+
+**Dependencies:**
+- Requires Script 4 (demultiplex_UMI.py) to be run first
+- Python packages: altair, pandas, pickle, vl-convert-python (for PNG export)
+
+---
+
 ## Complete Pipeline Example
 
 ```bash
@@ -144,6 +235,12 @@ python demultiplex_folders.py example
 # Step 2: Demultiplex reads by index for all populations
 python demultiplex_index.py example
 
+# Step 3: Check quality of demultiplexing results
+python check_index_quality.py example
+
 # Step 4: Create UMI libraries for each population
 python demultiplex_UMI.py example
+
+# Step 5: Check quality of UMI data
+python check_UMI_quality.py example
 ```
