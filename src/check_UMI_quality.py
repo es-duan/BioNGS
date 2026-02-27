@@ -6,8 +6,8 @@ This script analyzes the quality of UMI dictionaries created by Script 4 (demult
 It generates visualizations comparing the number of UMIs per population and the distribution 
 of reads per UMI.
 
-Input: UMI dictionary pickle files from Outputs/{experiment}/demultiplexing/P{Population}/
-Output: Bar plots saved to Outputs/{experiment}/UMI_quality/
+Input: UMI dictionary pickle files from results/{experiment}/demultiplexing/P{Population}/
+Output: Bar plots saved to results/{experiment}/UMI_quality/
 
 Dependencies: Script 4 (demultiplex_UMI.py) must be run first
 Usage: python check_UMI_quality.py <experiment_name>
@@ -22,7 +22,7 @@ import altair as alt
 import pandas as pd
 
 
-def find_umi_libraries(experiment_name, output_base='Outputs'):
+def find_umi_libraries(experiment_name, output_base='results'):
     """
     Find all UMI library pickle files for an experiment.
     
@@ -314,7 +314,7 @@ def check_umi_quality(experiment_name):
         return False
     
     # Create output directory
-    output_dir = os.path.join('Outputs', experiment_name, 'UMI_quality')
+    output_dir = os.path.join('results', experiment_name, 'UMI_quality')
     os.makedirs(output_dir, exist_ok=True)
     print(f"\nOutput directory: {output_dir}")
     
@@ -333,7 +333,7 @@ def main():
     )
     parser.add_argument(
         'experiment_name',
-        help='Name of the experiment (e.g., "example"). Script will analyze UMI libraries from Outputs/{experiment_name}/demultiplexing/'
+        help='Name of the experiment (e.g., "example"). Script will analyze UMI libraries from results/{experiment_name}/demultiplexing/'
     )
     
     args = parser.parse_args()

@@ -177,7 +177,7 @@ def analyze_demultiplexing_results(experiment_name):
     dict
         Dictionary with analysis results
     """
-    output_base = os.path.join("Outputs", experiment_name, "demultiplexing")
+    output_base = os.path.join("results", experiment_name, "demultiplexing")
     
     if not os.path.exists(output_base):
         raise FileNotFoundError(f"Demultiplexing output not found: {output_base}")
@@ -598,7 +598,7 @@ def main():
     print(f"{'='*80}")
     
     # Create output directory
-    output_dir = os.path.join("Outputs", experiment_name, "index_quality")
+    output_dir = os.path.join("results", experiment_name, "index_quality")
     os.makedirs(output_dir, exist_ok=True)
     print(f"\nOutput directory: {output_dir}")
     

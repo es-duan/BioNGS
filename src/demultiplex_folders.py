@@ -5,7 +5,7 @@ Input: Experiment name (looks for CSV in input_data/{experiment_name}/)
 Output: Create a folder and empty R1 and R2 fastq files for each population
 Description: This is the first script of the pipeline. The user provides an experiment name,
              and the script finds the multiplexing CSV file in the corresponding input_data
-             folder and creates the output directory structure in Outputs/{experiment_name}/.
+             folder and creates the output directory structure in results/{experiment_name}/.
 """
 
 import os
@@ -61,7 +61,7 @@ def create_demultiplex_folders(experiment_name):
     print(f"Found multiplexing CSV: {csv_path}")
     
     # Create output directory
-    output_dir = os.path.join("Outputs", experiment_name, "demultiplexing")
+    output_dir = os.path.join("results", experiment_name, "demultiplexing")
     os.makedirs(output_dir, exist_ok=True)
     print(f"Output directory: {output_dir}\n")
     # Create the output directory if it doesn't exist
@@ -99,7 +99,7 @@ def main():
     )
     parser.add_argument(
         'experiment_name',
-        help='Name of the experiment (e.g., "example"). Script will look for CSV in input_data/{experiment_name}/ and create outputs in Outputs/{experiment_name}/'
+        help='Name of the experiment (e.g., "example"). Script will look for CSV in input_data/{experiment_name}/ and create outputs in results/{experiment_name}/'
     )
     
     args = parser.parse_args()

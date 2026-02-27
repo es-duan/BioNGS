@@ -56,7 +56,7 @@ python demultiplex_folders.py example
 - CSV file should contain columns: Time, Population, GW_name, R1_index, R2_index
 
 **Output:**
-- Creates output directory at `Outputs/{experiment_name}/demultiplexing/`
+- Creates output directory at `results/{experiment_name}/demultiplexing/`
 - Creates a folder for each population (named P{Population}, e.g., "P1" for Population 1)
 - Creates empty R1 and R2 fastq files in each folder
 
@@ -83,7 +83,7 @@ python demultiplex_index.py example
 - Processes each population's fastq files independently
 
 **Output:**
-- Populates population-specific fastq files with matched reads in `Outputs/{experiment_name}/demultiplexing/P{Population}/`
+- Populates population-specific fastq files with matched reads in `results/{experiment_name}/demultiplexing/P{Population}/`
 - Creates files for short reads (< 150 bp): `{GW_name}_short_reads_R1.fastq` and `{GW_name}_short_reads_R2.fastq`
 - Creates files for unmatched reads: `{GW_name}_unmatched_reads_R1.fastq` and `{GW_name}_unmatched_reads_R2.fastq`
 - Prints summary statistics for each population showing read distribution
@@ -111,7 +111,7 @@ python check_index_quality.py example
 
 **Input:**
 - Experiment name
-- Reads from the demultiplexing results directory: `Outputs/{experiment_name}/demultiplexing/`
+- Reads from the demultiplexing results directory: `results/{experiment_name}/demultiplexing/`
 - Analyzes:
   - Input fastq files from `input_data/{experiment_name}/`
   - Population fastq files in each `P{Population}/` folder
@@ -119,7 +119,7 @@ python check_index_quality.py example
   - Unmatched reads files (`{GW_name}_unmatched_reads_R1.fastq` and `_R2.fastq`)
 
 **Output:**
-- Creates output directory at `Outputs/{experiment_name}/index_quality/`
+- Creates output directory at `results/{experiment_name}/index_quality/`
 - **Read length histograms**: PNG plots showing distribution of read lengths for R1 and R2
   - Includes mean and median markers
   - Samples up to 10,000 reads from each input file
@@ -168,7 +168,7 @@ python demultiplex_UMI.py example
 
 **Output:**
 - Creates a UMI library pickle file for each population: `P{Population}_UMI_library.pkl`
-- Library stored in `Outputs/{experiment_name}/demultiplexing/P{Population}/`
+- Library stored in `results/{experiment_name}/demultiplexing/P{Population}/`
 - Library structure: Dictionary with (forward_UMI, reverse_UMI) tuples as keys
   - Each value contains:
     - `'R1'`: List of trimmed R1 sequences (primers removed)
@@ -198,11 +198,11 @@ python check_UMI_quality.py example
 
 **Input:**
 - Experiment name
-- UMI dictionary pickle files from `Outputs/{experiment_name}/demultiplexing/P{Population}/`
+- UMI dictionary pickle files from `results/{experiment_name}/demultiplexing/P{Population}/`
 - Reads all files matching pattern `*_UMI_dict.pkl`
 
 **Output:**
-- Creates output directory at `Outputs/{experiment_name}/UMI_quality/`
+- Creates output directory at `results/{experiment_name}/UMI_quality/`
 - **UMI count bar plot**: PNG plot comparing the number of unique UMI pairs across populations
 - **Reads per UMI box plot**: PNG plot showing distribution of read counts per UMI for each population
 - **Summary statistics**: Displays mean and median reads per UMI for each population

@@ -220,7 +220,7 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     Parameters:
     -----------
     population_folder : str
-        Path to the population folder (e.g., Outputs/example/demultiplexing/P1/)
+        Path to the population folder (e.g., results/example/demultiplexing/P1/)
     population_num : str
         Population number (e.g., "1")
     gw_name : str
@@ -357,7 +357,7 @@ def process_all_populations(experiment_name):
         True if at least one UMI library was successfully saved, False otherwise
     """
     # Base output directory
-    output_base = os.path.join("Outputs", experiment_name, "demultiplexing")
+    output_base = os.path.join("results", experiment_name, "demultiplexing")
     
     if not os.path.exists(output_base):
         print(f"Error: Output directory not found: {output_base}")

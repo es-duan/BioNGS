@@ -312,7 +312,7 @@ def main():
         return
     
     # Set output directory
-    output_dir = os.path.join("Outputs", args.experiment_name, "demultiplexing")
+    output_dir = os.path.join("results", args.experiment_name, "demultiplexing")
     
     if not os.path.exists(output_dir):
         print(f"Error: Output directory not found: {output_dir}")
