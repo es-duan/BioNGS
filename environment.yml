@@ -3,6 +3,7 @@ channels:
   - bioconda
   - conda-forge
   - defaults
+
 dependencies:
   - python=3.11
   - biopython>=1.80
@@ -13,3 +14,4 @@ dependencies:
   - altair>=5.0.0
   - vl-convert-python>=1.0.0
   - samtools>=1.0
+  - fastqc>=0.12

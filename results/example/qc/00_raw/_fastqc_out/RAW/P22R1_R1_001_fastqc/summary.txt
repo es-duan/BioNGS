@@ -1,0 +1,11 @@
+PASS	Basic Statistics	P22R1_R1_001.fastq
+PASS	Per base sequence quality	P22R1_R1_001.fastq
+PASS	Per tile sequence quality	P22R1_R1_001.fastq
+PASS	Per sequence quality scores	P22R1_R1_001.fastq
+FAIL	Per base sequence content	P22R1_R1_001.fastq
+FAIL	Per sequence GC content	P22R1_R1_001.fastq
+PASS	Per base N content	P22R1_R1_001.fastq
+WARN	Sequence Length Distribution	P22R1_R1_001.fastq
+WARN	Sequence Duplication Levels	P22R1_R1_001.fastq
+WARN	Overrepresented sequences	P22R1_R1_001.fastq
+PASS	Adapter Content	P22R1_R1_001.fastq
