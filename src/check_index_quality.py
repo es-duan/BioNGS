@@ -163,7 +163,7 @@ def load_populations_from_csv(csv_path):
     return populations
 
 
-def analyze_demultiplexing_results(experiment_name):
+def analyze_demultiplexing_results(experiment_name, output_base, gw_name_filter=None):
     """
     Analyze demultiplexing results for an experiment.
     
@@ -177,7 +177,6 @@ def analyze_demultiplexing_results(experiment_name):
     dict
         Dictionary with analysis results
     """
-    output_base = os.path.join("results", experiment_name, "demultiplexing")
     
     if not os.path.exists(output_base):
         raise FileNotFoundError(f"Demultiplexing output not found: {output_base}")
@@ -192,6 +191,8 @@ def analyze_demultiplexing_results(experiment_name):
     results = {}
     
     # For each input file (GW_name), analyze its demultiplexing results
+    if gw_name_filter:
+        input_files = [x for x in input_files if x[0] == gw_name_filter]
     for gw_name, r1_input, r2_input in input_files:
         print(f"\nAnalyzing results for {gw_name}...")
         
@@ -490,7 +491,8 @@ def create_read_distribution_barplot(experiment_name, results, output_dir):
         text_middle = alt.Chart(df).mark_text(
             align='center',
             baseline='middle',
-            color='white',
+            color='black',
+            dy=5,
             fontSize=10,
             fontWeight='bold'
         ).encode(
@@ -531,7 +533,7 @@ def create_read_distribution_barplot(experiment_name, results, output_dir):
             print(f"  Saved: {output_path_html}")
 
 
-def generate_summary_report(experiment_name, results, output_dir):
+def generate_summary_report(experiment_name, results, output_dir, min_len):
     """
     Generate a text summary report of the analysis.
     
@@ -564,7 +566,7 @@ def generate_summary_report(experiment_name, results, output_dir):
             
             f.write("\nQuality control reads:\n")
             short_pct = (file_results['short_reads'] / file_results['input_total'] * 100) if file_results['input_total'] > 0 else 0
-            f.write(f"  Short reads (<150 bp): {file_results['short_reads']:,} reads ({short_pct:.1f}%)\n")
+            f.write(f"  Short reads (<{min_len} bp): {file_results['short_reads']:,} reads ({short_pct:.1f}%)\n")
             
             unmatched_pct = (file_results['unmatched_reads'] / file_results['input_total'] * 100) if file_results['input_total'] > 0 else 0
             f.write(f"  Unmatched reads: {file_results['unmatched_reads']:,} reads ({unmatched_pct:.1f}%)\n")
@@ -581,40 +583,65 @@ def generate_summary_report(experiment_name, results, output_dir):
 
 
 def main():
-    """Main function to run the analysis."""
     parser = argparse.ArgumentParser(
         description='Check quality of indexing/NGS data after demultiplexing'
     )
-    parser.add_argument(
-        'experiment_name',
-        help='Name of the experiment (e.g., "example")'
-    )
-    
+
+    parser.add_argument('experiment_name', help='Name of the experiment (e.g., "example")')
+
+    # ⭐ 新增参数：指定 run 目录
+    parser.add_argument('--demux_dir', default=None,
+                        help='Demultiplexing output directory '
+                             '(e.g. results/<exp>/demultiplexing/run_150)')
+
+    # ⭐ 新增参数：指定输出目录
+    parser.add_argument('--outdir', default=None,
+                        help='Output directory for basic QC plots')
+
+    # ⭐ 新增参数：用于在summary里显示正确阈值
+    parser.add_argument('--min_len', type=int, default=150,
+                        help='Minimum length cutoff used (for labeling only)')
+
+    # ⭐ 可选：只分析某个GW_name
+    parser.add_argument('--gw_name', default=None,
+                        help='Optional: analyze only this GW_name (e.g., P22R1)')
+
     args = parser.parse_args()
     experiment_name = args.experiment_name
-    
-    print(f"\n{'='*80}")
-    print(f"Index Quality Analysis: {experiment_name}")
-    print(f"{'='*80}")
-    
-    # Create output directory
-    output_dir = os.path.join("results", experiment_name, "index_quality")
+
+    # 默认 demux 目录
+    output_base = args.demux_dir or os.path.join("results", experiment_name, "demultiplexing")
+
+    if not os.path.exists(output_base):
+        raise FileNotFoundError(f"Demultiplexing output not found: {output_base}")
+
+    # 默认输出目录
+    output_dir = args.outdir or os.path.join(output_base, "basic_qc")
     os.makedirs(output_dir, exist_ok=True)
-    print(f"\nOutput directory: {output_dir}")
-    
-    # Analyze demultiplexing results
-    results, input_files = analyze_demultiplexing_results(experiment_name)
-    
-    # Create visualizations
+
+    print("\n" + "="*80)
+    print(f"Index Quality Analysis: {experiment_name}")
+    print(f"Demux dir: {output_base}")
+    print(f"Output dir: {output_dir}")
+    print(f"min_len label: {args.min_len}")
+    if args.gw_name:
+        print(f"GW_name filter: {args.gw_name}")
+    print("="*80)
+
+    # ⭐ 改成传入 output_base 和 gw_name
+    results, input_files = analyze_demultiplexing_results(
+        experiment_name,
+        output_base,
+        args.gw_name
+    )
+
     create_read_length_histogram(experiment_name, input_files, output_dir)
     create_read_distribution_barplot(experiment_name, results, output_dir)
-    
-    # Generate summary report
-    generate_summary_report(experiment_name, results, output_dir)
-    
-    print(f"\n{'='*80}")
+    generate_summary_report(experiment_name, results, output_dir, args.min_len)
+
+    print("\n" + "="*80)
     print("Analysis complete!")
-    print(f"{'='*80}\n")
+    print("="*80 + "\n")
 
 
 if __name__ == "__main__":

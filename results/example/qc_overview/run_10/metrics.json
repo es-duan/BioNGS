@@ -1,0 +1,27 @@
+{
+  "experiment": "example",
+  "min_len": 10,
+  "timestamp": "2026-02-27T16:17:03",
+  "overall": {
+    "total": 165273,
+    "short": 0,
+    "unmatched": 11935,
+    "matched": 153338,
+    "discard_rate": 0.0,
+    "short_rate": 0.0,
+    "unmatched_rate": 0.07221385223236705,
+    "matched_rate": 0.9277861477676329
+  },
+  "per_population": [
+    {
+      "population": "P1",
+      "gw_name": "P22R1",
+      "counts": {
+        "total": 165273,
+        "short": 0,
+        "unmatched": 11935,
+        "matched": 153338
+      }
+    }
+  ]
+}

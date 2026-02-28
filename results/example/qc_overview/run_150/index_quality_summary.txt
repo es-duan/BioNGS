@@ -1,0 +1,19 @@
+Index Quality Analysis Report
+Experiment: example
+================================================================================
+
+
+P22R1
+--------------------------------------------------------------------------------
+Total input reads: 165,273
+
+Population distribution:
+  P1: 101,613 reads (61.5%)
+
+Quality control reads:
+  Short reads (<150 bp): 56,165 reads (34.0%)
+  Unmatched reads: 7,495 reads (4.5%)
+
+Total distributed: 165,273 reads
+Recovery rate: 100.0%
+
