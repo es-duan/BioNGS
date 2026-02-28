@@ -213,7 +213,7 @@ def find_umi_primers_csv(experiment_name):
                            f"Expected file with 'UMI' or 'primer' in the name.")
 
 
-def create_umi_dict(population_folder, population_num, gw_name, forward_primer_info, reverse_primer_info):
+def create_umi_dict(input_population_folder, output_population_folder, population_num, gw_name, forward_primer_info, reverse_primer_info):
     """
     Create a UMI dictionary for a single population by processing its fastq files.
     
@@ -237,14 +237,17 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
         {'R1': [sequences], 'R2': [sequences]} as values
     """
     population = f"P{population_num}"
-    
-    # Define fastq file paths
-    r1_fastq = os.path.join(population_folder, f"{population}_R1.fastq")
-    r2_fastq = os.path.join(population_folder, f"{population}_R2.fastq")
-    
-    # Define unmatched UMI file paths
-    unmatched_r1_fastq = os.path.join(population_folder, f"{population}_unmatched_UMI_R1.fastq")
-    unmatched_r2_fastq = os.path.join(population_folder, f"{population}_unmatched_UMI_R2.fastq")
+
+    # Input fastq paths (read from demultiplexing ONLY)
+    r1_fastq = os.path.join(input_population_folder, f"{population}_R1.fastq")
+    r2_fastq = os.path.join(input_population_folder, f"{population}_R2.fastq")
+
+    # Output folder (store UMI artifacts ONLY)
+    os.makedirs(output_population_folder, exist_ok=True)
+
+    # Unmatched UMI fastq outputs (write to UMI folder)
+    unmatched_r1_fastq = os.path.join(output_population_folder, f"{population}_unmatched_UMI_R1.fastq")
+    unmatched_r2_fastq = os.path.join(output_population_folder, f"{population}_unmatched_UMI_R2.fastq")
     
     if not os.path.exists(r1_fastq) or not os.path.exists(r2_fastq):
         print(f"  Warning: Fastq files not found for {population}")
@@ -342,7 +345,7 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     return umi_library
 
 
-def process_all_populations(experiment_name):
+def process_all_populations(experiment_name, demux_dir=None, umi_outdir=None):
     """
     Process all populations in an experiment to create UMI libraries.
     
@@ -357,12 +360,15 @@ def process_all_populations(experiment_name):
         True if at least one UMI library was successfully saved, False otherwise
     """
     # Base output directory
-    output_base = os.path.join("results", experiment_name, "demultiplexing")
-    
-    if not os.path.exists(output_base):
-        print(f"Error: Output directory not found: {output_base}")
+    # Input demux dir (data only)
+    demux_base = demux_dir if demux_dir is not None else os.path.join("results", experiment_name, "demultiplexing")
+    # UMI outputs dir (UMI artifacts only)
+    umi_base = umi_outdir if umi_outdir is not None else os.path.join("results", experiment_name, "umi")
+
+    if not os.path.exists(demux_base):
+        print(f"Error: Demultiplexing directory not found: {demux_base}")
         print("Please run demultiplex_folders.py and demultiplex_index.py first.")
-        return
+        return False
     
     # Find and load multiplexing CSV
     try:
@@ -400,8 +406,9 @@ def process_all_populations(experiment_name):
             })
     
     print(f"Found {len(populations)} population(s) in CSV")
-    print(f"Output directory: {output_base}\n")
-    
+    print(f"Demux input directory: {demux_base}")
+    print(f"UMI output directory:  {umi_base}\n")
+
     # Track if any libraries were successfully saved
     saved_count = 0
     
@@ -410,16 +417,17 @@ def process_all_populations(experiment_name):
         gw_name = pop_info['GW_name']
         population_num = pop_info['Population']
         population = f"P{population_num}"
-        
-        population_folder = os.path.join(output_base, population)
-        
-        if not os.path.exists(population_folder):
-            print(f"Warning: Population folder not found: {population_folder}")
+
+        input_population_folder = os.path.join(demux_base, population)
+        output_population_folder = os.path.join(umi_base, population)
+
+        if not os.path.exists(input_population_folder):
+            print(f"Warning: Population folder not found: {input_population_folder}")
             continue
-        
-        # Create UMI dictionary
+
         umi_dict = create_umi_dict(
-            population_folder,
+            input_population_folder,
+            output_population_folder,
             population_num,
             gw_name,
             primers['forward'],
@@ -428,12 +436,10 @@ def process_all_populations(experiment_name):
         
         # Save dictionary as pickle file
         lib_filename = f"{population}_UMI_dict.pkl"
-        lib_path = os.path.join(population_folder, lib_filename)
-        
+        lib_path = os.path.join(output_population_folder, lib_filename)
         with open(lib_path, 'wb') as f:
             pickle.dump(umi_dict, f)
-        
-        print(f"  Saved UMI dictionary: {lib_filename}\n")
+        print(f"  Saved UMI dictionary: {lib_path}\n")
         saved_count += 1
     
     return saved_count > 0
@@ -445,17 +451,33 @@ def main():
     )
     parser.add_argument(
         'experiment_name',
-        help='Name of the experiment (e.g., "example"). Script will auto-detect multiplexing and UMI primers CSVs from input_data/{experiment_name}/'
+        help='Experiment name (e.g., "example")'
     )
-    
+    parser.add_argument(
+        '--demux_dir',
+        default=None,
+        help='Input demultiplexing directory (data only). Example: results/example/demultiplexing/run_150'
+    )
+    parser.add_argument(
+        '--umi_outdir',
+        default=None,
+        help='Output directory for UMI artifacts. Example: results/example/umi/run_150'
+    )
+
     args = parser.parse_args()
-    
-    success = process_all_populations(args.experiment_name)
-    
+
+    success = process_all_populations(
+        args.experiment_name,
+        demux_dir=args.demux_dir,
+        umi_outdir=args.umi_outdir
+    )
+
     if success:
         print("="*60)
         print("UMI dictionary creation complete!")
         print("="*60)
+    else:
+        print("UMI dictionary creation failed.")
 
 
 if __name__ == '__main__':

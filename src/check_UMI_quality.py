@@ -22,7 +22,7 @@ import altair as alt
 import pandas as pd
 
 
-def find_umi_libraries(experiment_name, output_base='results'):
+def find_umi_libraries(experiment_name, umi_dir=None, output_base='results'):
     """
     Find all UMI library pickle files for an experiment.
     
@@ -38,14 +38,13 @@ def find_umi_libraries(experiment_name, output_base='results'):
     dict
         Dictionary mapping population names to UMI library paths
     """
-    demultiplex_dir = os.path.join(output_base, experiment_name, 'demultiplexing')
-    
-    if not os.path.exists(demultiplex_dir):
-        raise FileNotFoundError(f"Demultiplexing directory not found: {demultiplex_dir}")
-    
+    if umi_dir is None:
+        search_dir = os.path.join(output_base, experiment_name, 'demultiplexing')
+    else:
+        search_dir = umi_dir
+
+    pattern = os.path.join(search_dir, 'P*', '*_UMI_dict.pkl')
     libraries = {}
-    pattern = os.path.join(demultiplex_dir, 'P*', '*_UMI_dict.pkl')
-    
     for lib_path in sorted(glob.glob(pattern)):
         # Extract population name from path (e.g., P1)
         population = os.path.basename(os.path.dirname(lib_path)).replace('P', '')
@@ -267,7 +266,7 @@ def create_summary_statistics_plot(libraries_data, output_dir):
     print(f"  Saved: {output_path}")
 
 
-def check_umi_quality(experiment_name):
+def check_umi_quality(experiment_name, umi_dir=None, outdir=None):
     """
     Main function to check UMI quality for an experiment.
     
@@ -283,7 +282,7 @@ def check_umi_quality(experiment_name):
     # Find UMI libraries
     print("\nSearching for UMI libraries...")
     try:
-        libraries = find_umi_libraries(experiment_name)
+        libraries = find_umi_libraries(experiment_name, umi_dir=umi_dir)
     except FileNotFoundError as e:
         print(f"Error: {e}")
         return False
@@ -314,7 +313,10 @@ def check_umi_quality(experiment_name):
         return False
     
     # Create output directory
-    output_dir = os.path.join('results', experiment_name, 'UMI_quality')
+    if outdir is None:
+        output_dir = os.path.join('results', experiment_name, 'UMI_quality')
+    else:
+        output_dir = outdir
     os.makedirs(output_dir, exist_ok=True)
     print(f"\nOutput directory: {output_dir}")
     
@@ -330,16 +332,31 @@ def check_umi_quality(experiment_name):
 def main():
     parser = argparse.ArgumentParser(
         description='Check quality of UMI libraries for each population'
+
     )
     parser.add_argument(
         'experiment_name',
         help='Name of the experiment (e.g., "example"). Script will analyze UMI libraries from results/{experiment_name}/demultiplexing/'
     )
-    
+    parser.add_argument(
+        '--demux_dir',
+        default=None,
+        help='Path to demultiplexing directory (e.g., results/example/demultiplexing/run_150)'
+    )
+
+    parser.add_argument(
+        '--outdir',
+        default=None,
+        help='Output directory for UMI quality plots (e.g., results/example/UMI_quality/run_150)'
+    )
     args = parser.parse_args()
-    
-    success = check_umi_quality(args.experiment_name)
-    
+
+    success = check_umi_quality(
+        args.experiment_name,
+        umi_dir=args.demux_dir,
+        outdir=args.outdir
+    )
+
     if success:
         print("\n" + "=" * 60)
         print("UMI quality check complete!")

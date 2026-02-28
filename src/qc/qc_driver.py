@@ -145,6 +145,47 @@ def warn_and_maybe_rerun(exp: str, gw_name: str, base_run_min_len: int, threshol
         except Exception:
             print("Invalid min_len. Please input a positive integer.")
 
+def run_umi_steps(exp: str, demux_dir: Path, run_tag: str) -> None:
+    root = repo_root()
+
+    umi_script = root / "src" / "demultiplex_UMI.py"
+    umi_qc_script = root / "src" / "check_UMI_quality.py"
+
+    if not umi_script.exists():
+        raise FileNotFoundError(f"demultiplex_UMI.py not found: {umi_script}")
+    if not umi_qc_script.exists():
+        raise FileNotFoundError(f"check_UMI_quality.py not found: {umi_qc_script}")
+
+    # 统一 run 层级
+    umi_outdir = root / "results" / exp / "umi" / run_tag
+    umi_qc_outdir = root / "results" / exp / "UMI_quality" / run_tag
+
+    umi_outdir.mkdir(parents=True, exist_ok=True)
+    umi_qc_outdir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[qc_driver] Running UMI dict build for {run_tag}")
+
+    # 必须传 umi_outdir
+    run([
+        sys.executable,
+        str(umi_script),
+        exp,
+        "--demux_dir", str(demux_dir),
+        "--umi_outdir", str(umi_outdir),
+    ])
+
+    print(f"[qc_driver] Running UMI QC for {run_tag}")
+
+    run([
+        sys.executable,
+        str(umi_qc_script),
+        exp,
+        "--demux_dir", str(umi_outdir),  # 扫描刚才生成的 dict
+        "--outdir", str(umi_qc_outdir),
+    ])
+
+    print(f"[qc_driver] UMI dicts: {umi_outdir}")
+    print(f"[qc_driver] UMI quality outputs: {umi_qc_outdir}")
 
 def run_one(exp: str, gw_name: str, min_len: int) -> None:
     root = repo_root()
@@ -229,7 +270,7 @@ def main():
 
     args = ap.parse_args()
 
-    # 1) baseline run (default 150)
+    # 1) baseline run
     run_one(args.experiment, args.gw_name, args.min_len)
 
     # 2) warning + optional rerun
@@ -241,11 +282,18 @@ def main():
         interactive=bool(args.interactive),
     )
 
-    if new_min_len is None:
-        return
+    # 3) decide final run tag
+    final_min_len = new_min_len if new_min_len is not None else args.min_len
 
-    # 3) rerun with user-provided min_len
-    run_one(args.experiment, args.gw_name, new_min_len)
+    # if user chose rerun, generate it first
+    if new_min_len is not None:
+        run_one(args.experiment, args.gw_name, new_min_len)
+
+    # 4) run UMI steps ONCE on the final run
+    root = repo_root()
+    final_run_tag = f"run_{final_min_len}"
+    final_demux_dir = root / "results" / args.experiment / "demultiplexing" / final_run_tag
+    run_umi_steps(args.experiment, final_demux_dir, final_run_tag)
 
 
 if __name__ == "__main__":
