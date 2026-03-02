@@ -252,7 +252,19 @@ def create_umi_dict(input_population_folder, output_population_folder, populatio
     if not os.path.exists(r1_fastq) or not os.path.exists(r2_fastq):
         print(f"  Warning: Fastq files not found for {population}")
         return {}
-    
+
+    def fastq_count(path):
+        with open(path, "r") as fh:
+            return sum(1 for _ in fh) // 4
+
+    n1 = fastq_count(r1_fastq)
+    n2 = fastq_count(r2_fastq)
+    if n1 != n2:
+        raise RuntimeError(
+            f"[PAIRING ERROR] R1/R2 have different read counts in {population}: "
+            f"R1={n1}, R2={n2}. Files are not synchronized."
+        )
+
     # Initialize UMI library
     umi_library = {}
     stats = {
@@ -277,10 +289,14 @@ def create_umi_dict(input_population_folder, output_population_folder, populatio
             # Verify that R1 and R2 match by checking headers
             r1_id = r1_record.id.split()[0]
             r2_id = r2_record.id.split()[0]
-            
+
             if r1_id != r2_id:
-                print(f"    Warning: R1 and R2 IDs do not match for {r1_id}")
-                continue
+                raise RuntimeError(
+                    f"R1/R2 read ID mismatch detected.\n"
+                    f"R1: {r1_id}\n"
+                    f"R2: {r2_id}\n"
+                    "Paired FASTQ files are not synchronized."
+                )
             
             # Extract UMIs from both reads
             r1_result = extract_umi_from_sequence(r1_record.seq, forward_primer_info)

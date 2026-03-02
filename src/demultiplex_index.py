@@ -65,7 +65,9 @@ def load_populations(csv_path):
     return populations
 
 
+
 def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir, min_len):
+
     gw_name = population_info["GW_name"]
     population = f"P{population_info['Population']}"
     r1_index = population_info["R1_index"]
@@ -74,6 +76,20 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir, mi
     counts = {"total": 0, "short": 0, "unmatched": 0, "matched": 0}
 
     pop_folder = os.path.join(output_dir, population)
+    os.makedirs(pop_folder, exist_ok=True)
+
+    def fastq_count(path: str) -> int:
+        with open(path, "r") as fh:
+            return sum(1 for _ in fh) // 4
+
+    n1 = fastq_count(r1_fastq)
+    n2 = fastq_count(r2_fastq)
+
+    if n1 != n2:
+        raise RuntimeError(
+            f"[PAIRING ERROR] R1/R2 read counts differ: R1={n1}, R2={n2}"
+        )
+
     pop_r1_file = os.path.join(pop_folder, f"{population}_R1.fastq")
     pop_r2_file = os.path.join(pop_folder, f"{population}_R2.fastq")
 
@@ -99,10 +115,12 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir, mi
             r1_id = r1_record.id.split()[0]
             r2_id = r2_record.id.split()[0]
             if r1_id != r2_id:
-                print("Warning: R1 and R2 IDs do not match!")
-                print(f"  R1: {r1_id}")
-                print(f"  R2: {r2_id}")
-                continue
+                raise RuntimeError(
+                    f"[PAIRING ERROR] R1/R2 read ID mismatch detected for {gw_name} ({population}).\n"
+                    f"R1: {r1_id}\n"
+                    f"R2: {r2_id}\n"
+                    "Paired FASTQ files are not synchronized (possible single-end filtering, file mix-up, or truncation)."
+                )
 
             # Length filter (user-configurable)
             if len(r1_record.seq) < min_len or len(r2_record.seq) < min_len:
