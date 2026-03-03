@@ -252,6 +252,7 @@ def analyze_demultiplexing_results(experiment_name):
 def create_read_length_histogram(experiment_name, input_files, output_dir):
     """
     Create histogram of read lengths from input fastq files.
+    Creates a single multi-panel plot with subplots for each fastq file.
     
     Parameters:
     -----------
@@ -264,6 +265,9 @@ def create_read_length_histogram(experiment_name, input_files, output_dir):
     """
     print("\nGenerating read length histogram...")
     
+    # Collect all data first
+    all_data = []
+    
     for gw_name, r1_path, r2_path in input_files:
         print(f"  Sampling read lengths from {gw_name}...")
         
@@ -271,138 +275,81 @@ def create_read_length_histogram(experiment_name, input_files, output_dir):
         r1_lengths = get_read_lengths(r1_path, max_reads=10000)
         r2_lengths = get_read_lengths(r2_path, max_reads=10000)
         
-        # Create DataFrames
-        r1_df = pd.DataFrame({
-            'Read Length (bp)': r1_lengths,
-            'Read Type': 'R1'
-        })
-        r2_df = pd.DataFrame({
-            'Read Length (bp)': r2_lengths,
-            'Read Type': 'R2'
-        })
-        
-        # Calculate statistics
-        r1_mean = r1_df['Read Length (bp)'].mean() if len(r1_df) > 0 else 0
-        r1_median = r1_df['Read Length (bp)'].median() if len(r1_df) > 0 else 0
-        r2_mean = r2_df['Read Length (bp)'].mean() if len(r2_df) > 0 else 0
-        r2_median = r2_df['Read Length (bp)'].median() if len(r2_df) > 0 else 0
-        
-        # R1 histogram
-        if len(r1_df) > 0:
-            hist_r1 = alt.Chart(r1_df).mark_bar(
-                opacity=0.7,
-                color='steelblue'
-            ).encode(
-                x=alt.X('Read Length (bp):Q', bin=alt.Bin(maxbins=50), title='Read Length (bp)'),
-                y=alt.Y('count()', title='Frequency')
-            ).properties(
-                width=400,
-                height=300,
-                title=f'{gw_name} - R1 Read Lengths'
-            )
-            
-            # Add mean and median lines
-            mean_line_r1 = alt.Chart(pd.DataFrame({'x': [r1_mean]})).mark_rule(
-                color='red',
-                strokeDash=[5, 5],
-                size=2
-            ).encode(
-                x='x:Q'
-            )
-            
-            median_line_r1 = alt.Chart(pd.DataFrame({'x': [r1_median]})).mark_rule(
-                color='orange',
-                strokeDash=[5, 5],
-                size=2
-            ).encode(
-                x='x:Q'
-            )
-            
-            # Add text annotations
-            text_r1 = alt.Chart(pd.DataFrame({
-                'x': [r1_mean, r1_median],
-                'y': [0, 0],
-                'label': [f'Mean: {r1_mean:.1f} bp', f'Median: {r1_median:.1f} bp'],
-                'color': ['red', 'orange']
-            })).mark_text(
-                align='left',
-                dx=5,
-                dy=-5,
-                fontSize=11
-            ).encode(
-                x='x:Q',
-                text='label:N',
-                color=alt.Color('color:N', scale=None)
-            )
-            
-            chart_r1 = hist_r1 + mean_line_r1 + median_line_r1
-        else:
-            chart_r1 = alt.Chart(pd.DataFrame({'x': [0]})).mark_text(
-                text='No data available'
-            ).properties(width=400, height=300)
-        
-        # R2 histogram
-        if len(r2_df) > 0:
-            hist_r2 = alt.Chart(r2_df).mark_bar(
-                opacity=0.7,
-                color='seagreen'
-            ).encode(
-                x=alt.X('Read Length (bp):Q', bin=alt.Bin(maxbins=50), title='Read Length (bp)'),
-                y=alt.Y('count()', title='Frequency')
-            ).properties(
-                width=400,
-                height=300,
-                title=f'{gw_name} - R2 Read Lengths'
-            )
-            
-            # Add mean and median lines
-            mean_line_r2 = alt.Chart(pd.DataFrame({'x': [r2_mean]})).mark_rule(
-                color='red',
-                strokeDash=[5, 5],
-                size=2
-            ).encode(
-                x='x:Q'
-            )
-            
-            median_line_r2 = alt.Chart(pd.DataFrame({'x': [r2_median]})).mark_rule(
-                color='orange',
-                strokeDash=[5, 5],
-                size=2
-            ).encode(
-                x='x:Q'
-            )
-            
-            chart_r2 = hist_r2 + mean_line_r2 + median_line_r2
-        else:
-            chart_r2 = alt.Chart(pd.DataFrame({'x': [0]})).mark_text(
-                text='No data available'
-            ).properties(width=400, height=300)
-        
-        # Combine charts horizontally
-        combined_chart = alt.hconcat(chart_r1, chart_r2).configure_axis(
-            labelFontSize=11,
-            titleFontSize=12
-        ).configure_title(
-            fontSize=14
-        )
-        
-        # Save as PNG
-        output_path_png = os.path.join(output_dir, f'{gw_name}_read_length_histogram.png')
-        try:
-            combined_chart.save(output_path_png, scale_factor=2.0)
-            print(f"  Saved: {output_path_png}")
-        except Exception as e:
-            print(f"  Warning: Could not save PNG. Trying HTML fallback...")
-            print(f"         Error: {e}")
-            # Fallback to HTML if PNG export fails
-            output_path_html = os.path.join(output_dir, f'{gw_name}_read_length_histogram.html')
-            combined_chart.save(output_path_html)
-            print(f"  Saved: {output_path_html}")
+        # Add to combined dataset
+        for length in r1_lengths:
+            all_data.append({
+                'Read Length (bp)': length,
+                'Read Type': 'R1',
+                'Sample': gw_name
+            })
+        for length in r2_lengths:
+            all_data.append({
+                'Read Length (bp)': length,
+                'Read Type': 'R2',
+                'Sample': gw_name
+            })
+    
+    if not all_data:
+        print("  No data to plot.")
+        return
+    
+    # Create combined DataFrame
+    df = pd.DataFrame(all_data)
+    
+    # Create faceted histogram
+    chart = alt.Chart(df).mark_bar(
+        opacity=0.7
+    ).encode(
+        x=alt.X('Read Length (bp):Q', bin=alt.Bin(maxbins=50), title='Read Length (bp)'),
+        y=alt.Y('count()', title='Frequency'),
+        color=alt.Color('Read Type:N', 
+                       scale=alt.Scale(domain=['R1', 'R2'], 
+                                     range=['steelblue', 'seagreen']),
+                       legend=alt.Legend(title='Read Type')),
+        column=alt.Column('Sample:N', title=None, header=alt.Header(labelFontSize=14, labelFontWeight='bold')),
+        row=alt.Row('Read Type:N', title=None, header=alt.Header(labelFontSize=13, labelFontWeight='bold'))
+    ).properties(
+        width=350,
+        height=200
+    ).resolve_scale(
+        x='independent',
+        y='independent'
+    )
+    
+    # Configure overall appearance
+    final_chart = chart.configure_axis(
+        labelFontSize=10,
+        titleFontSize=11
+    ).configure_header(
+        titleFontSize=13,
+        labelFontSize=12
+    ).properties(
+        title={
+            'text': f'Read Length Distribution - {experiment_name}',
+            'fontSize': 16,
+            'fontWeight': 'bold',
+            'anchor': 'middle'
+        }
+    )
+    
+    # Save as PNG
+    output_path_png = os.path.join(output_dir, f'{experiment_name}_read_length_histogram.png')
+    try:
+        final_chart.save(output_path_png, scale_factor=2.0)
+        print(f"  Saved: {output_path_png}")
+    except Exception as e:
+        print(f"  Warning: Could not save PNG. Trying HTML fallback...")
+        print(f"         Error: {e}")
+        # Fallback to HTML if PNG export fails
+        output_path_html = os.path.join(output_dir, f'{experiment_name}_read_length_histogram.html')
+        final_chart.save(output_path_html)
+        print(f"  Saved: {output_path_html}")
 
 
 def create_read_distribution_barplot(experiment_name, results, output_dir):
     """
     Create bar plot showing distribution of reads across populations and categories.
+    Creates a single multi-panel plot with subplots for each fastq file.
     
     Parameters:
     -----------
@@ -413,122 +360,158 @@ def create_read_distribution_barplot(experiment_name, results, output_dir):
     output_dir : str
         Directory to save plots
     """
-    print("\nGenerating read distribution bar plots...")
+    print("\nGenerating read distribution bar plot...")
+    
+    # Collect all data
+    all_data = []
     
     for gw_name, file_results in results.items():
-        print(f"  Creating plot for {gw_name}...")
-        
-        # Prepare data
-        categories = []
-        counts = []
-        colors = []
-        category_types = []
+        print(f"  Processing data for {gw_name}...")
         
         # Add populations
         for pop_name in sorted(file_results['populations'].keys()):
-            categories.append(pop_name)
-            counts.append(file_results['populations'][pop_name])
-            colors.append('steelblue')
-            category_types.append('Population')
+            count = file_results['populations'][pop_name]
+            total = file_results['input_total']
+            percentage = (count / total * 100) if total > 0 else 0
+            
+            all_data.append({
+                'Sample': gw_name,
+                'Category': pop_name,
+                'Count': count,
+                'Percentage': percentage,
+                'Type': 'Population',
+                'Color': 'steelblue',
+                'Total_Input': total
+            })
         
         # Add short reads
-        categories.append('Short Reads')
-        counts.append(file_results['short_reads'])
-        colors.append('orange')
-        category_types.append('QC')
-        
-        # Add unmatched reads
-        categories.append('Unmatched Reads')
-        counts.append(file_results['unmatched_reads'])
-        colors.append('crimson')
-        category_types.append('QC')
-        
-        # Calculate percentages
-        total = file_results['input_total']
-        percentages = [(count / total * 100) if total > 0 else 0 for count in counts]
-        
-        # Create DataFrame
-        df = pd.DataFrame({
-            'Category': categories,
-            'Count': counts,
-            'Color': colors,
-            'Type': category_types,
-            'Percentage': percentages,
-            'Label': [f"{count:,}" for count in counts],
-            'PctLabel': [f"{pct:.1f}%" for pct in percentages]
+        count = file_results['short_reads']
+        percentage = (count / total * 100) if total > 0 else 0
+        all_data.append({
+            'Sample': gw_name,
+            'Category': 'Short Reads',
+            'Count': count,
+            'Percentage': percentage,
+            'Type': 'QC',
+            'Color': 'orange',
+            'Total_Input': total
         })
         
-        # Create bar chart
-        bars = alt.Chart(df).mark_bar(
-            opacity=0.7,
-            stroke='black',
-            strokeWidth=1
-        ).encode(
-            x=alt.X('Category:N', title='Category', sort=categories),
-            y=alt.Y('Count:Q', title='Number of Reads'),
-            color=alt.Color('Color:N', scale=None),
-            tooltip=[
-                alt.Tooltip('Category:N', title='Category'),
-                alt.Tooltip('Count:Q', title='Count', format=','),
-                alt.Tooltip('Percentage:Q', title='Percentage', format='.1f')
-            ]
-        )
-        
-        # Add count labels on top of bars
-        text_top = alt.Chart(df).mark_text(
-            align='center',
-            baseline='bottom',
-            dy=-5,
-            fontSize=11
-        ).encode(
-            x=alt.X('Category:N', sort=categories),
-            y=alt.Y('Count:Q'),
-            text='Label:N'
-        )
-        
-        # Add percentage labels in the middle of bars
-        text_middle = alt.Chart(df).mark_text(
-            align='center',
-            baseline='middle',
-            color='white',
-            fontSize=10,
-            fontWeight='bold'
-        ).encode(
-            x=alt.X('Category:N', sort=categories),
-            y=alt.Y('Count:Q', stack='zero'),
-            text='PctLabel:N'
-        ).transform_filter(
-            alt.datum.Count > 0
-        )
-        
-        # Combine layers
-        chart = (bars + text_top + text_middle).properties(
-            width=600,
-            height=400,
-            title={
-                'text': f'Read Distribution for {gw_name}',
-                'subtitle': f'Total Input: {file_results["input_total"]:,} reads'
-            }
-        ).configure_axis(
-            labelFontSize=11,
-            titleFontSize=12,
-            labelAngle=-45
-        ).configure_title(
-            fontSize=14
-        )
-        
-        # Save as PNG
-        output_path_png = os.path.join(output_dir, f'{gw_name}_read_distribution.png')
-        try:
-            chart.save(output_path_png, scale_factor=2.0)
-            print(f"  Saved: {output_path_png}")
-        except Exception as e:
-            print(f"  Warning: Could not save PNG. Trying HTML fallback...")
-            print(f"         Error: {e}")
-            # Fallback to HTML if PNG export fails
-            output_path_html = os.path.join(output_dir, f'{gw_name}_read_distribution.html')
-            chart.save(output_path_html)
-            print(f"  Saved: {output_path_html}")
+        # Add unmatched reads
+        count = file_results['unmatched_reads']
+        percentage = (count / total * 100) if total > 0 else 0
+        all_data.append({
+            'Sample': gw_name,
+            'Category': 'Unmatched Reads',
+            'Count': count,
+            'Percentage': percentage,
+            'Type': 'QC',
+            'Color': 'crimson',
+            'Total_Input': total
+        })
+    
+    if not all_data:
+        print("  No data to plot.")
+        return
+    
+    # Create DataFrame
+    df = pd.DataFrame(all_data)
+    
+    # Create base chart
+    base = alt.Chart(df)
+    
+    # Create bar chart (without faceting)
+    bars = base.mark_bar(
+        opacity=0.7,
+        stroke='black',
+        strokeWidth=0.5
+    ).encode(
+        x=alt.X('Category:N', 
+               title='Category',
+               axis=alt.Axis(labelAngle=-45)),
+        y=alt.Y('Count:Q', title='Number of Reads'),
+        color=alt.Color('Color:N', scale=None, legend=None),
+        tooltip=[
+            alt.Tooltip('Sample:N', title='Sample'),
+            alt.Tooltip('Category:N', title='Category'),
+            alt.Tooltip('Count:Q', title='Count', format=','),
+            alt.Tooltip('Percentage:Q', title='Percentage', format='.1f')
+        ]
+    )
+    
+    # Add count labels on top of bars (without faceting)
+    text_top = base.mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-3,
+        fontSize=9
+    ).encode(
+        x=alt.X('Category:N'),
+        y=alt.Y('Count:Q'),
+        text=alt.Text('Count:Q', format=',')
+    )
+    
+    # Add percentage labels (without faceting)
+    text_pct = base.mark_text(
+        align='center',
+        baseline='middle',
+        color='white',
+        fontSize=9,
+        fontWeight='bold'
+    ).encode(
+        x=alt.X('Category:N'),
+        y=alt.Y('Count:Q'),
+        text='text_label:N'
+    ).transform_filter(
+        alt.datum.Count > 0
+    ).transform_calculate(
+        text_label="format(datum.Percentage, '.1f') + '%'"
+    )
+    
+    # Layer charts first, then apply faceting
+    layered = alt.layer(bars, text_top, text_pct).properties(
+        width=400,
+        height=300
+    )
+    
+    # Apply faceting to the layered chart
+    chart = layered.facet(
+        column=alt.Column('Sample:N', 
+                         title=None,
+                         header=alt.Header(labelFontSize=13, labelFontWeight='bold'))
+    ).resolve_scale(
+        x='independent',
+        y='independent'
+    )
+    
+    # Configure overall appearance
+    final_chart = chart.configure_axis(
+        labelFontSize=10,
+        titleFontSize=11
+    ).configure_header(
+        titleFontSize=13,
+        labelFontSize=12
+    ).properties(
+        title={
+            'text': f'Read Distribution Across Populations - {experiment_name}',
+            'fontSize': 16,
+            'fontWeight': 'bold',
+            'anchor': 'middle'
+        }
+    )
+    
+    # Save as PNG
+    output_path_png = os.path.join(output_dir, f'{experiment_name}_read_distribution.png')
+    try:
+        final_chart.save(output_path_png, scale_factor=2.0)
+        print(f"  Saved: {output_path_png}")
+    except Exception as e:
+        print(f"  Warning: Could not save PNG. Trying HTML fallback...")
+        print(f"         Error: {e}")
+        # Fallback to HTML if PNG export fails
+        output_path_html = os.path.join(output_dir, f'{experiment_name}_read_distribution.html')
+        final_chart.save(output_path_html)
+        print(f"  Saved: {output_path_html}")
 
 
 def generate_summary_report(experiment_name, results, output_dir):
@@ -580,6 +563,84 @@ def generate_summary_report(experiment_name, results, output_dir):
     print(f"  Saved summary report: {output_path}")
 
 
+def export_analysis_results_csv(experiment_name, results, output_dir):
+    """
+    Export analysis results dictionary to a tidy CSV for easy R import.
+    
+    Parameters:
+    -----------
+    experiment_name : str
+        Name of the experiment
+    results : dict
+        Analysis results from analyze_demultiplexing_results
+    output_dir : str
+        Directory to save the CSV
+    """
+    rows = []
+    
+    for gw_name, file_results in results.items():
+        input_total = file_results['input_total']
+        
+        # Population rows
+        for pop_name, count in sorted(file_results['populations'].items()):
+            percentage = (count / input_total * 100) if input_total > 0 else 0
+            rows.append({
+                'experiment': experiment_name,
+                'sample': gw_name,
+                'category_type': 'Population',
+                'category': pop_name,
+                'read_count': count,
+                'input_total': input_total,
+                'percentage_of_input': percentage
+            })
+        
+        # QC rows
+        short_count = file_results['short_reads']
+        short_pct = (short_count / input_total * 100) if input_total > 0 else 0
+        rows.append({
+            'experiment': experiment_name,
+            'sample': gw_name,
+            'category_type': 'QC',
+            'category': 'Short Reads',
+            'read_count': short_count,
+            'input_total': input_total,
+            'percentage_of_input': short_pct
+        })
+        
+        unmatched_count = file_results['unmatched_reads']
+        unmatched_pct = (unmatched_count / input_total * 100) if input_total > 0 else 0
+        rows.append({
+            'experiment': experiment_name,
+            'sample': gw_name,
+            'category_type': 'QC',
+            'category': 'Unmatched Reads',
+            'read_count': unmatched_count,
+            'input_total': input_total,
+            'percentage_of_input': unmatched_pct
+        })
+        
+        total_distributed = (
+            sum(file_results['populations'].values())
+            + file_results['short_reads']
+            + file_results['unmatched_reads']
+        )
+        recovery_rate = (total_distributed / input_total * 100) if input_total > 0 else 0
+        rows.append({
+            'experiment': experiment_name,
+            'sample': gw_name,
+            'category_type': 'Summary',
+            'category': 'Total Distributed',
+            'read_count': total_distributed,
+            'input_total': input_total,
+            'percentage_of_input': recovery_rate
+        })
+    
+    df = pd.DataFrame(rows)
+    output_path = os.path.join(output_dir, 'index_quality_results.csv')
+    df.to_csv(output_path, index=False)
+    print(f"  Saved analysis CSV: {output_path}")
+
+
 def main():
     """Main function to run the analysis."""
     parser = argparse.ArgumentParser(
@@ -604,6 +665,9 @@ def main():
     
     # Analyze demultiplexing results
     results, input_files = analyze_demultiplexing_results(experiment_name)
+    
+    # Export analysis dictionary as CSV for easy downstream use
+    export_analysis_results_csv(experiment_name, results, output_dir)
     
     # Create visualizations
     create_read_length_histogram(experiment_name, input_files, output_dir)

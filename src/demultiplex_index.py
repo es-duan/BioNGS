@@ -15,6 +15,8 @@ import os
 import csv
 import argparse
 import glob
+import gzip
+import shutil
 from Bio import SeqIO
 
 
@@ -46,6 +48,8 @@ def find_multiplexing_csv(experiment_name):
 def find_fastq_files(experiment_name, gw_name):
     """
     Find R1 and R2 fastq files for a given experiment and GW_name.
+    Handles both regular and gzipped fastq files. If gzipped files are found,
+    they will be decompressed before processing.
     
     Parameters:
     -----------
@@ -57,18 +61,23 @@ def find_fastq_files(experiment_name, gw_name):
     Returns:
     --------
     tuple or None
-        (r1_path, r2_path) paths to the R1 and R2 fastq files, or None if not found
+        (r1_path, r2_path) paths to the R1 and R2 fastq files (unzipped if needed), 
+        or None if not found
     """
     input_dir = os.path.join("input_data", experiment_name)
     
-    # Search for R1 and R2 files recursively
+    # Search for R1 and R2 files recursively (including gzipped)
     r1_patterns = [
         os.path.join(input_dir, "**", f"{gw_name}_R1*.fastq"),
         os.path.join(input_dir, "**", f"{gw_name}_R1*.fq"),
+        os.path.join(input_dir, "**", f"{gw_name}_R1*.fastq.gz"),
+        os.path.join(input_dir, "**", f"{gw_name}_R1*.fq.gz"),
     ]
     r2_patterns = [
         os.path.join(input_dir, "**", f"{gw_name}_R2*.fastq"),
         os.path.join(input_dir, "**", f"{gw_name}_R2*.fq"),
+        os.path.join(input_dir, "**", f"{gw_name}_R2*.fastq.gz"),
+        os.path.join(input_dir, "**", f"{gw_name}_R2*.fq.gz"),
     ]
     
     r1_files = []
@@ -82,7 +91,52 @@ def find_fastq_files(experiment_name, gw_name):
     if not r1_files or not r2_files:
         return None
     
-    return r1_files[0], r2_files[0]
+    r1_path = r1_files[0]
+    r2_path = r2_files[0]
+    
+    # Unzip files if they are gzipped
+    if r1_path.endswith('.gz'):
+        print(f"  Decompressing {os.path.basename(r1_path)}...")
+        r1_path = decompress_gz_file(r1_path)
+    
+    if r2_path.endswith('.gz'):
+        print(f"  Decompressing {os.path.basename(r2_path)}...")
+        r2_path = decompress_gz_file(r2_path)
+    
+    return r1_path, r2_path
+
+
+def decompress_gz_file(gz_path):
+    """
+    Decompress a gzipped file and return the path to the decompressed file.
+    
+    Parameters:
+    -----------
+    gz_path : str
+        Path to the gzipped file
+        
+    Returns:
+    --------
+    str
+        Path to the decompressed file
+    """
+    # Create output path by removing .gz extension
+    output_path = gz_path[:-3] if gz_path.endswith('.gz') else gz_path + '.unzipped'
+    
+    # Skip if already decompressed
+    if os.path.exists(output_path):
+        print(f"    Using existing decompressed file: {os.path.basename(output_path)}")
+        return output_path
+    
+    # Decompress the file
+    try:
+        with gzip.open(gz_path, 'rb') as f_in:
+            with open(output_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        print(f"    Decompressed to: {os.path.basename(output_path)}")
+        return output_path
+    except Exception as e:
+        raise IOError(f"Failed to decompress {gz_path}: {e}")
 
 
 def load_populations(csv_path):

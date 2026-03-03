@@ -81,6 +81,8 @@ python demultiplex_index.py example
 - Script reads the multiplexing CSV to find all populations and their GW_names
 - For each population, finds fastq files in `input_data/{experiment_name}/` matching the GW_name
 - Processes each population's fastq files independently
+- Supports both regular (`*.fastq`, `*.fq`) and gzipped (`*.fastq.gz`, `*.fq.gz`) input files
+- Automatically decompresses gzipped files before processing
 
 **Output:**
 - Populates population-specific fastq files with matched reads in `results/{experiment_name}/demultiplexing/P{Population}/`
@@ -120,14 +122,20 @@ python check_index_quality.py example
 
 **Output:**
 - Creates output directory at `results/{experiment_name}/index_quality/`
-- **Read length histograms**: PNG plots showing distribution of read lengths for R1 and R2
-  - Includes mean and median markers
+- **Read length histogram**: Single PNG plot (`{experiment_name}_read_length_histogram.png`) with multi-panel layout
+  - Separate panels for each input fastq file (columns)
+  - Separate rows for R1 and R2 reads
   - Samples up to 10,000 reads from each input file
-- **Read distribution bar plots**: Shows how reads were distributed across:
-  - Each population
-  - Short reads category
-  - Unmatched reads category
-  - Displays counts and percentages
+- **Read distribution bar plot**: Single PNG plot (`{experiment_name}_read_distribution.png`) with multi-panel layout
+  - Separate panels for each fastq file showing read distribution across:
+    - Each population
+    - Short reads category
+    - Unmatched reads category
+  - Displays read counts and percentages on bars
+- **Analysis CSV file**: Tidy R-compatible CSV (`index_quality_results.csv`) with columns:
+  - `experiment`, `sample`, `category_type`, `category`, `read_count`, `input_total`, `percentage_of_input`
+  - Includes rows for populations, QC categories, and summary totals
+  - Easily importable into R with `read.csv()`
 - **Summary report**: Text file (`index_quality_summary.txt`) with detailed statistics including:
   - Total input reads
   - Reads per population with percentages
@@ -137,7 +145,7 @@ python check_index_quality.py example
 
 **Visualizations:**
 - Uses Altair library for high-quality static visualizations
-- All plots saved as PNG files (with HTML fallback if PNG export fails)
+- All plots saved as PNG files with multiple panels for easy comparison (with HTML fallback if PNG export fails)
 
 **Dependencies:**
 - Requires Script 2 (demultiplex_index.py) to be run first

@@ -1,0 +1,9 @@
+experiment,sample,category_type,category,read_count,input_total,percentage_of_input
+example,P22R2,Population,P2,143092,203624,70.27265941146426
+example,P22R2,QC,Short Reads,51519,203624,25.301045063450278
+example,P22R2,QC,Unmatched Reads,9013,203624,4.426295525085452
+example,P22R2,Summary,Total Distributed,203624,203624,100.0
+example,P22R1,Population,P1,101613,165273,61.481911746020224
+example,P22R1,QC,Short Reads,56165,165273,33.983167244498496
+example,P22R1,QC,Unmatched Reads,7495,165273,4.534921009481282
+example,P22R1,Summary,Total Distributed,165273,165273,100.0
