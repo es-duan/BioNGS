@@ -2,12 +2,6 @@
 from __future__ import annotations
 from pathlib import Path
 
-def repo_root() -> Path:
-    # src/qc/io/paths.py -> parents[3] == repo root
-    return Path(__file__).resolve().parents[3]
-
-def results_dir(experiment: str) -> Path:
-    return repo_root() / "results" / experiment
-
-def input_dir(experiment: str) -> Path:
-    return repo_root() / "input_data" / experiment
+# 兼容层：QC 子系统继续 import qc.io.paths，
+# 但真正实现统一走 src/utils/paths.py
+from src.utils.paths import repo_root, results_dir, input_dir  # noqa: F401
