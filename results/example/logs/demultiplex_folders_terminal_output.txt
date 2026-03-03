@@ -1,0 +1,19 @@
+
+================================================================================
+Run started: 2026-03-03 13:47:46
+Script: demultiplex_folders
+================================================================================
+Logging terminal output to: results/example/logs/demultiplex_folders_terminal_output.txt
+Found multiplexing CSV: input_data/example/example_multiplexing_info.csv
+Output directory: results/example/demultiplexing
+
+Created folder and files for population: P1 (GW_name: P22R1)
+  R1 index: GCGTGACA, R2 index: GATGTACA
+Created folder and files for population: P2 (GW_name: P22R2)
+  R1 index: GCGTGACA, R2 index: GATGTACA
+
+All population folders created in: results/example/demultiplexing
+
+================================================================================
+Run ended: 2026-03-03 13:47:46
+================================================================================

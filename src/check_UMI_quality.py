@@ -174,7 +174,7 @@ def create_umi_count_plot(libraries_data, output_dir):
 
 def create_reads_per_umi_plot(libraries_data, output_dir):
     """
-    Create a box plot comparing the distribution of reads per UMI across populations.
+    Create violin plots comparing the distribution of reads per UMI across populations.
     
     Parameters:
     -----------
@@ -194,27 +194,36 @@ def create_reads_per_umi_plot(libraries_data, output_dir):
     
     df = pd.DataFrame(data_rows)
     
-    # Create box plot
-    chart = alt.Chart(df).mark_boxplot(
-        color='lightblue',
+    # Create violin plots by faceting one panel per population
+    violin = alt.Chart(df).transform_density(
+        'Reads_per_UMI',
+        as_=['Reads_per_UMI', 'Density'],
+        groupby=['Population']
+    ).mark_area(
+        orient='horizontal',
         opacity=0.7,
-        size=50
+        color='steelblue'
     ).encode(
-        x=alt.X('Population:N', title='Population', sort=populations),
         y=alt.Y('Reads_per_UMI:Q', title='Number of Reads per UMI'),
+        x=alt.X('Density:Q', stack='center', title=None, axis=None),
         tooltip=[
             alt.Tooltip('Population:N', title='Population'),
-            alt.Tooltip('min(Reads_per_UMI):Q', title='Min', format='.0f'),
-            alt.Tooltip('q1(Reads_per_UMI):Q', title='Q1', format='.0f'),
-            alt.Tooltip('median(Reads_per_UMI):Q', title='Median', format='.0f'),
-            alt.Tooltip('q3(Reads_per_UMI):Q', title='Q3', format='.0f'),
-            alt.Tooltip('max(Reads_per_UMI):Q', title='Max', format='.0f')
+            alt.Tooltip('Reads_per_UMI:Q', title='Reads per UMI', format='.0f'),
+            alt.Tooltip('Density:Q', title='Density', format='.4f')
         ]
     ).properties(
-        width=600,
-        height=400,
-        title='Distribution of Reads per UMI Pair by Population'
+        width=120,
+        height=400
+    )
+
+    chart = violin.facet(
+        column=alt.Column('Population:N', title='Population', sort=populations)
+    ).properties(
+        title='Distribution of Reads per UMI Pair by Population (Violin Plot)'
     ).configure_axis(
+        labelFontSize=11,
+        titleFontSize=12
+    ).configure_header(
         labelFontSize=11,
         titleFontSize=12
     ).configure_title(

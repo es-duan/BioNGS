@@ -59,6 +59,7 @@ python demultiplex_folders.py example
 - Creates output directory at `results/{experiment_name}/demultiplexing/`
 - Creates a folder for each population (named P{Population}, e.g., "P1" for Population 1)
 - Creates empty R1 and R2 fastq files in each folder
+- Saves terminal output log to `results/{experiment_name}/logs/demultiplex_folders_terminal_output.txt`
 
 ---
 
@@ -89,6 +90,7 @@ python demultiplex_index.py example
 - Creates files for short reads (< 150 bp): `{GW_name}_short_reads_R1.fastq` and `{GW_name}_short_reads_R2.fastq`
 - Creates files for unmatched reads: `{GW_name}_unmatched_reads_R1.fastq` and `{GW_name}_unmatched_reads_R2.fastq`
 - Prints summary statistics for each population showing read distribution
+- Saves terminal output log to `results/{experiment_name}/logs/demultiplex_index_terminal_output.txt`
 
 **Quality Checks:**
 - Verifies R1 and R2 read pairs match by checking headers
@@ -182,6 +184,7 @@ python demultiplex_UMI.py example
     - `'R1'`: List of trimmed R1 sequences (primers removed)
     - `'R2'`: List of trimmed R2 sequences (primers removed)
 - R1 and R2 sequences are in matched order by read pair
+- Saves terminal output log to `results/{experiment_name}/logs/demultiplex_UMI_terminal_output.txt`
 
 **Processing Details:**
 - UMI extraction: Matches primer sequences before and after the 10 N's to find UMI location
@@ -212,7 +215,7 @@ python check_UMI_quality.py example
 **Output:**
 - Creates output directory at `results/{experiment_name}/UMI_quality/`
 - **UMI count bar plot**: PNG plot comparing the number of unique UMI pairs across populations
-- **Reads per UMI box plot**: PNG plot showing distribution of read counts per UMI for each population
+- **Reads per UMI violin plot**: PNG plot showing distribution of read counts per UMI for each population
 - **Summary statistics**: Displays mean and median reads per UMI for each population
 - **Text summary**: `UMI_quality_summary.txt` with detailed statistics
 
