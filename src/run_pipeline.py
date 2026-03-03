@@ -13,6 +13,7 @@ from src.pipeline.run_manifest import (
     write_json,
 )
 from src.pipeline.stage0_validation import stage0_validate
+from src.pipeline.stage0_validation import print_stage0_summary
 from src.pipeline.stage1_raw_qc import stage1_raw_qc
 from src.pipeline.stage2_demux import stage2_demux
 from src.pipeline.stage2_5_demux_qc import stage2_5_demux_qc
@@ -65,9 +66,14 @@ def main() -> None:
     print(f"Run tag:    {run_tag}\n")
 
     # ---------- Stage 0 ----------
+
     print("Running Stage 0: Input validation...")
     try:
         stage0_result = stage0_validate(r1=r1, r2=r2, multiplex_csv=multiplex_csv)
+
+        # NEW: print details to terminal
+        print_stage0_summary(stage0_result, as_json=False)  # True 就会把 JSON 也打印出来
+
         write_json(metrics_dir / "metrics_stage0_validation.json", stage0_result)
         update_stage(manifest_path, "stage0_validation", {"status": "success", "result": stage0_result})
         print("Stage 0 completed successfully.\n")

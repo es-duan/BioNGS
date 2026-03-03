@@ -1,24 +1,34 @@
 # BioNGS
 
-BioNGS is a structured Next-Generation Sequencing (NGS) processing pipeline developed for bacterial mutation rate analysis.
+BioNGS is a fully structured, stage-based Next-Generation Sequencing (NGS) processing pipeline designed for bacterial mutation rate analysis and UMI-aware processing.
 
-Originally built for CHEM E 546, it has evolved into a modular and reproducible demultiplexing + quality control framework supporting adaptive filtering and dual-layer QC reporting.
+The pipeline enforces strict reproducibility, modular stage separation, machine-readable metrics, and interactive quality-aware preprocessing.
 
 ---
 
-## Overview
+## Pipeline Overview
 
-This pipeline provides:
+BioNGS follows a deterministic stage-based workflow:
 
-- DNA index-based demultiplexing
-- Configurable read-length filtering (default: 150 bp)
-- Automated discard-rate warning system
-- Reproducible multi-threshold runs (run_150, run_130, etc.)
-- Dual-level quality control:
-  - QC Overview (lab-friendly summary)
-  - QC Details (professional FastQC-style report)
+```
+Stage 0   Input validation
+Stage 1   Raw QC
+Stage 2   Demultiplex (inline index)
+Stage 2.5 Post-demux QC
+Stage 3   UMI extraction (strict + optional relaxed rerun)
+Stage 3.5 UMI quality summary
+Stage 4   QC after structure stripping
+Stage 5   Preprocessing (interactive tail-trim + length filtering)
+Stage 6   Post-preprocess QC
+Stage 7   UMI collapsing / consensus generation
+```
 
-The design enforces strict separation of sequencing outputs and QC outputs to maintain clarity and reproducibility.
+Each stage:
+
+- Writes structured outputs
+- Generates machine-readable metrics
+- Updates a global run_manifest.json
+- Never silently overwrites without explicit confirmation
 
 ---
 
@@ -26,45 +36,128 @@ The design enforces strict separation of sequencing outputs and QC outputs to ma
 ```
 BioNGS/
 │
-├── src/ # Source code
-│    ├── qc/ # QC driver & fancy reports
-│    │    ├── entry_qc.py
-│    │    ├── qc_driver.py
-│    │    ├── oi/ 
-│    │    │    ├── manifest.py
-│    │    │    └── paths.py
-│    │    ├── stages/
-│    │    │     ├── stage_after_demux.py
-│    │    │     └── stage_raw.py
-│    │    ├── entry_qc.py
-│    │    └── qc_driver.py
-│    │
-│    ├── check_index_quality.py
-│    ├── check_UMI_quality.py
-│    ├── demultiplex_folders.py
-│    ├── demultiplex_index.py
-│    ├── demultiplex_UMI.py
-│    ├── fastqc_unpacker.py
-│    └── README.md
-│ 
+├── src/
+│   ├── run_pipeline.py
+│   ├── stage0_validate.py
+│   ├── stage1_raw_qc.py
+│   ├── stage2_demux.py
+│   ├── stage3_umi_extract.py
+│   ├── stage3_5_umi_quality.py
+│   ├── stage5_preprocess.py
+│   ├── stage6_post_trim_qc.py
+│   └── ...
 │
-├── input_data/ # Raw sequencing data
-├── results/ # Generated outputs
-│    ├── demultiplexing
-│    ├── manifests
-│    ├── qc_details
-│    └── qc_overview
-│ 
-├── environment.yml # Conda environment
-└── README.md # Project overview
+├── input_data/
+├── results/
+│   ├── <exp>/
+│   │    ├── demultiplexing/
+│   │    ├── umi_extracted/
+│   │    ├── trimmed/
+│   │    ├── qc_overview/
+│   │    ├── qc_details/
+│   │    ├── trim_reports/
+│   │    └── run_manifest.json
+│
+├── environment.yml
+└── README.md
 ```
 Detailed script-level documentation is available:
 See [src/README.md](src/README.md) for detailed usage instructions for each script.
 
-
 ---
 
-## Setup
+## Key Features
+1. Structured Stage Control
+  - Stage-by-stage execution
+  - Automatic status tracking
+  - Manifest-based reproducibility
+  - Safe abort logic
+
+
+2. Inline Index Demultiplexing
+  - Index-based population splitting
+  - Immediate error detection for broken read pairs
+  - Unmatched tracking
+  - Terminal warnings:
+    - 20% warning
+    - 35% strong warning
+    - 50% abnormal (optional stop)
+3. UMI Extraction with Adaptive Rerun
+- UMI extraction supports:
+    - Strict mode (mismatch=0, shift=0)
+    - Optional relaxed rerun profiles:
+      - mismatch=1, shift=0
+      - mismatch=1, shift=2
+
+- Pipeline reports transparent fail reasons:
+  - missing_prefix_left
+  - missing_anchor_right
+  - too_short
+  - invalid_umi_chars
+  - other_parse_fail
+
+User may rerun with relaxed profile.
+Rerun overwrites Stage3 outputs safely to preserve downstream compatibility.
+
+4. Interactive Preprocessing (Stage 5)
+Stage 5 includes:
+- 5.1 Tail Trimming (fastp)
+  - Sampled Q evaluation (Q30/Q29/Q28/Q25/Q20)
+  - User selects Q threshold
+  - Automatic warnings:
+    - Q30 < 85% → WARNING
+    - Q30 < 80% → STRONG WARNING
+    - Q30 < 70% → ABNORMAL (optional stop)
+
+5.2 Length Filtering Preview
+
+Before filtering, pipeline displays:
+  - Short-rate table at multiple thresholds (e.g. 180/170/160/150/140/130)
+  - air-level short definition:
+    - A pair is short if either mate < min_len
+
+  - Warning levels:
+    - 30% WARNING
+    - 40% STRONG WARNING
+    - 50% ABNORMAL (optional stop)
+
+Old preview versions are preserved (v1, v2, ...).
+
+
+5. Dual-Layer QC System
+- QC Overview
+  - Lab-friendly:
+    - Length distribution
+    - Summary statistics
+    - Short-rate previews
+
+- QC Details
+Professional FastQC-style unpacked reports:
+  - Raw
+  - Post-demux
+  - Post-trim
+
+6. Machine-Readable Metrics
+  Every stage writes:
+  ```
+  results/<exp>/metrics/
+  ```
+
+  - Includes:
+      - metrics_demux.json
+      - metrics_trim.json
+      - umi_quality_summary.txt
+      - run_manifest.json
+
+  - metrics_trim.json records:
+      - q_threshold
+      - min_len
+      - Q30 before/after
+      - short_rate
+      - dropped reasons
+      - user decisions
+
+## Installation
 
 ### Recommended: Conda Installation
 
@@ -91,6 +184,8 @@ This will install all required dependencies:
 
   - FastQC
 
+  - Fastp
+
   - Altair
 
   - vl-convert-python
@@ -102,41 +197,31 @@ This will install all required dependencies:
   - Samtools
 
 
-### Alternative: Manual Setup
-```bash
-python -m venv .venv
-source .venv/bin/activate
-
-pip install -e .
-```
-Ensure bowtie2 is installed system-wide:
-- macOS: brew install bowtie2
-
-- Linux: sudo apt-get install bowtie2
-
 ## Quick Start
 
-Run baseline demultiplexing with default 150 bp filtering:
+From project root:
+
 ```bash
-python -m src.qc.qc_driver <experiment_name> --gw_name <GW_NAME>
+conda activate biongs
+
+python -m src.run_pipeline \
+  --exp example \
+  --run_tag run1 \
+  --r1 input_data/example/R1.fastq.gz \
+  --r2 input_data/example/R2.fastq.gz \
+  --multiplex_csv input_data/example/example_multiplexing_info.csv
 ```
-If discard rate exceeds threshold (default 30%), the pipeline will:
 
-- Print a warning
+### Parameter Meaning
 
-- Suggest re-running with a different minimum length
+- --exp : experiment name (creates results/<exp>/)
 
-- Optionally prompt for a new threshold
+- --run_tag : run version label
 
-### Each threshold produces an independent run directory:
-```
-results/<experiment>/
-  demultiplexing/run_150/
-  demultiplexing/run_130/
-  qc_overview/run_150/
-  qc_overview/run_130/
-  qc_details/...
-```
+- --r1 / --r2 : raw FASTQ files
+
+- --multiplex_csv : index → population mapping table
+
 
 ## Quality Control Philosophy
 ### QC Overview
@@ -166,17 +251,21 @@ This separation ensures:
 
 - Reproducible threshold comparison
 
-## Design Principles
+## Design Philosophy
 
-- Reproducibility over convenience
+BioNGS prioritizes:
 
-- No overwriting between thresholds
+  - Engineering reproducibility
 
-- Clear separation of data and QC
+  - Explicit user decisions
 
-- Machine-readable metrics for downstream automation
+  - Transparent failure reporting
 
-- Lab-standard defaults with adaptive flexibility
+  - No silent data loss
 
+  - Strict stage isolation
+
+  - Overwrite safety when rerunning structural stages
+  
 ## Documentation
 For detailed usage instructions of each script, see: [src/README.md](src/README.md)
