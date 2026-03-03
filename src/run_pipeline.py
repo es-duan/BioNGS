@@ -148,7 +148,7 @@ def main() -> None:
         sys.exit(1)
 
     # ---------- Stage 3 ----------
-    print("Running Stage 3: UMI extraction (trim primers+UMI, tag header)...")
+    print("Running Stage 3: UMI extraction (trim primers + UMI, tag header)...")
     try:
         stage3_result = stage3_umi_extract(
             exp=exp,
