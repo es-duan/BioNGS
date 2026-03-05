@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "biongs"
+version = "0.1.0"
+description = "Pipeline for processing and analyzing Next Generation Sequencing data for bacterial mutation rate analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "BioNGS Team"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "biopython>=1.80",
+    "pandas>=1.3.0",
+    "numpy>=1.20.0",
+    "matplotlib>=3.5.0",
+    "altair>=5.0.0",
+    "vl-convert-python>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+]
+
+[project.scripts]
+demultiplex-folders = "src.demultiplex_folders:main"
+demultiplex-index = "src.demultiplex_index:main"
+demultiplex-umi = "src.demultiplex_UMI:main"
+check-index-quality = "src.check_index_quality:main"
+check-umi-quality = "src.check_UMI_quality:main"
+alignment-prep = "src.alignment_prep:main"
+fastqc-unpacker = "src.fastqc_unpacker:main"
+biongs-qc = "src.qc.qc_driver:main"
+
+[tool.setuptools]
+packages = ["src", "src.qc", "src.qc.io", "src.qc.stages"]
+
+[tool.setuptools.package-data]
+"*" = ["*.sh"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
