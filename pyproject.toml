@@ -39,20 +39,21 @@ dev = [
 ]
 
 [project.scripts]
-demultiplex-folders = "src.demultiplex_folders:main"
-demultiplex-index = "src.demultiplex_index:main"
-demultiplex-umi = "src.demultiplex_UMI:main"
-check-index-quality = "src.check_index_quality:main"
-check-umi-quality = "src.check_UMI_quality:main"
-alignment-prep = "src.alignment_prep:main"
-fastqc-unpacker = "src.fastqc_unpacker:main"
-biongs-qc = "src.qc.qc_driver:main"
+demultiplex-folders = "biongs.demultiplex_folders:main"
+demultiplex-index = "biongs.demultiplex_index:main"
+demultiplex-umi = "biongs.demultiplex_UMI:main"
+check-index-quality = "biongs.check_index_quality:main"
+check-umi-quality = "biongs.check_UMI_quality:main"
+alignment-prep = "biongs.alignment_prep:main"
+fastqc-unpacker = "biongs.fastqc_unpacker:main"
+biongs-qc = "biongs.qc.qc_driver:main"
 
 [tool.setuptools]
-packages = ["src", "src.qc", "src.qc.io", "src.qc.stages"]
+package-dir = {"biongs" = "src"}
+packages = ["biongs", "biongs.qc", "biongs.qc.io", "biongs.qc.stages"]
 
 [tool.setuptools.package-data]
-"*" = ["*.sh"]
+"biongs" = ["*.sh"]
 
 [tool.black]
 line-length = 100
