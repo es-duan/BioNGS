@@ -1,0 +1,101 @@
+{
+  "stage": "stage5_1_candidate_eval",
+  "exp": "example",
+  "run_tag": "run1",
+  "version": "v2",
+  "candidates": [
+    30,
+    29,
+    28,
+    25,
+    20
+  ],
+  "per_population": {
+    "1": {
+      "total_pairs_est": 128178,
+      "sample": {
+        "sample_pairs": 38453,
+        "requested_pairs": 38453,
+        "out_r1": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/sample/1.sample.R1.fastq",
+        "out_r2": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/sample/1.sample.R2.fastq"
+      },
+      "candidates": {
+        "Q30": {
+          "fastp_json": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q30/fastp.json",
+          "fastp_html": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q30/fastp.html",
+          "metrics": {
+            "q30_before": 0.9416325394670705,
+            "q30_after": 0.9432572262896565,
+            "total_reads_before": 76906,
+            "total_reads_after": 76838,
+            "total_bases_before": 14674512,
+            "total_bases_after": 14641089,
+            "mean_len_after": 190.5448996590229,
+            "trimmed_bases": null
+          },
+          "trimmed_bases_pct": 0.0
+        },
+        "Q29": {
+          "fastp_json": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q29/fastp.json",
+          "fastp_html": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q29/fastp.html",
+          "metrics": {
+            "q30_before": 0.9416325394670705,
+            "q30_after": 0.9432572262896565,
+            "total_reads_before": 76906,
+            "total_reads_after": 76838,
+            "total_bases_before": 14674512,
+            "total_bases_after": 14641089,
+            "mean_len_after": 190.5448996590229,
+            "trimmed_bases": null
+          },
+          "trimmed_bases_pct": 0.0
+        },
+        "Q28": {
+          "fastp_json": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q28/fastp.json",
+          "fastp_html": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q28/fastp.html",
+          "metrics": {
+            "q30_before": 0.9416325394670705,
+            "q30_after": 0.9432572262896565,
+            "total_reads_before": 76906,
+            "total_reads_after": 76838,
+            "total_bases_before": 14674512,
+            "total_bases_after": 14641089,
+            "mean_len_after": 190.5448996590229,
+            "trimmed_bases": null
+          },
+          "trimmed_bases_pct": 0.0
+        },
+        "Q25": {
+          "fastp_json": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q25/fastp.json",
+          "fastp_html": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q25/fastp.html",
+          "metrics": {
+            "q30_before": 0.9416325394670705,
+            "q30_after": 0.9423368427818599,
+            "total_reads_before": 76906,
+            "total_reads_after": 76838,
+            "total_bases_before": 14674512,
+            "total_bases_after": 14655389,
+            "mean_len_after": 190.73100549207425,
+            "trimmed_bases": null
+          },
+          "trimmed_bases_pct": 0.0
+        },
+        "Q20": {
+          "fastp_json": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q20/fastp.json",
+          "fastp_html": "/home/uniscan/BioNGS/results/example/trim_eval/run1/v2/1/Q20/fastp.html",
+          "metrics": {
+            "q30_before": 0.9416325394670705,
+            "q30_after": 0.9423368427818599,
+            "total_reads_before": 76906,
+            "total_reads_after": 76838,
+            "total_bases_before": 14674512,
+            "total_bases_after": 14655389,
+            "mean_len_after": 190.73100549207425,
+            "trimmed_bases": null
+          },
+          "trimmed_bases_pct": 0.0
+        }
+      }
+    }
+  }
+}

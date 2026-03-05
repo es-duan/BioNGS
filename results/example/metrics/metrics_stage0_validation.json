@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "fastq": {
+    "r1": "/home/uniscan/BioNGS/input_data/example/example_fastq/P22R2_R1_001.fastq.gz",
+    "r2": "/home/uniscan/BioNGS/input_data/example/example_fastq/P22R2_R2_001.fastq.gz",
+    "r1_records": 203624,
+    "r2_records": 203624
+  },
+  "multiplex_csv": {
+    "path": "/home/uniscan/BioNGS/input_data/example/example_multiplexing_info.csv",
+    "n_rows": 1,
+    "unique_populations": [
+      "1"
+    ],
+    "n_populations": 1,
+    "index_key_mode": "R1+R2"
+  }
+}

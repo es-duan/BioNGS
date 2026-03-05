@@ -1,0 +1,160 @@
+{
+  "run_id": "20260305T032143Z_pid55207",
+  "exp": "example",
+  "run_tag": "run1",
+  "created_utc": "2026-03-05T03:21:43.259107+00:00",
+  "inputs": {
+    "r1": "/home/uniscan/BioNGS/input_data/example/example_fastq/P22R2_R1_001.fastq.gz",
+    "r2": "/home/uniscan/BioNGS/input_data/example/example_fastq/P22R2_R2_001.fastq.gz",
+    "multiplex_csv": "/home/uniscan/BioNGS/input_data/example/example_multiplexing_info.csv",
+    "umi_primers_csv": "/home/uniscan/BioNGS/input_data/example/example_UMI_primers.csv"
+  },
+  "stages": {
+    "stage0_validation": {
+      "status": "success",
+      "result": {
+        "ok": true,
+        "fastq": {
+          "r1": "/home/uniscan/BioNGS/input_data/example/example_fastq/P22R2_R1_001.fastq.gz",
+          "r2": "/home/uniscan/BioNGS/input_data/example/example_fastq/P22R2_R2_001.fastq.gz",
+          "r1_records": 203624,
+          "r2_records": 203624
+        },
+        "multiplex_csv": {
+          "path": "/home/uniscan/BioNGS/input_data/example/example_multiplexing_info.csv",
+          "n_rows": 1,
+          "unique_populations": [
+            "1"
+          ],
+          "n_populations": 1,
+          "index_key_mode": "R1+R2"
+        }
+      }
+    },
+    "stage1_raw_qc": {
+      "status": "success",
+      "metrics_path": "/home/uniscan/BioNGS/results/example/metrics/metrics_raw_qc.json"
+    },
+    "stage2_demux": {
+      "status": "success",
+      "metrics_path": "/home/uniscan/BioNGS/results/example/demultiplexing/run1/metrics_demux.json"
+    },
+    "stage2_5_demux_qc": {
+      "status": "success",
+      "qc_details_dir": "/home/uniscan/BioNGS/results/example/qc_details/run1",
+      "qc_overview_dir": "/home/uniscan/BioNGS/results/example/qc_overview/run1",
+      "unmatched_rate": 0.06252209955604447
+    },
+    "stage3_umi_extract": {
+      "status": "success",
+      "mode": "strict",
+      "umi_extracted_root": "/home/uniscan/BioNGS/results/example/umi_extracted/run1",
+      "overall_unmatched_rate": 0.3285348336502648,
+      "per_population": {
+        "1": {
+          "total_pairs": 190893,
+          "extracted_pairs": 128178,
+          "unmatched_pairs": 62715,
+          "unmatched_rate": 0.3285348336502648,
+          "short_pairs_lt150": 47801,
+          "short_rate_lt150": 0.2504072962340159,
+          "usable_pairs_ge150": 143092,
+          "usable_unmatched_pairs": 15144,
+          "usable_unmatched_rate": 0.10583400888938585,
+          "usable_fail_reason_pair": {
+            "missing_prefix_anywhere": 8276,
+            "missing_anchor_right": 6868
+          },
+          "umi_dict_path": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1/1_UMI_dict.pkl",
+          "out_dir": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1",
+          "reason_report": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1/umi_extraction_summary.txt",
+          "fail_reason_pair": {
+            "missing_anchor_right": 49351,
+            "missing_prefix_anywhere": 11748,
+            "too_short": 1616
+          },
+          "fail_reason_r1": {
+            "missing_anchor_right": 41588,
+            "missing_prefix_anywhere": 10351,
+            "too_short": 1616
+          },
+          "fail_reason_r2": {
+            "missing_anchor_right": 40392,
+            "too_short": 5978,
+            "missing_prefix_anywhere": 2663
+          }
+        }
+      },
+      "overall_fail_reason_pair": {
+        "missing_anchor_right": 49351,
+        "missing_prefix_anywhere": 11748,
+        "too_short": 1616
+      },
+      "overall_fail_reason_r1": {
+        "missing_anchor_right": 41588,
+        "missing_prefix_anywhere": 10351,
+        "too_short": 1616
+      },
+      "overall_fail_reason_r2": {
+        "missing_anchor_right": 40392,
+        "too_short": 5978,
+        "missing_prefix_anywhere": 2663
+      }
+    },
+    "stage3_5_umi_quality": {
+      "status": "success",
+      "umi_quality_root": "/home/uniscan/BioNGS/results/example/UMI_quality/run1",
+      "per_population": {
+        "1": {
+          "out_txt": "/home/uniscan/BioNGS/results/example/UMI_quality/run1/1/UMI_quality_summary.txt",
+          "family_summary": {
+            "unique_families": 85645,
+            "mean_reads_per_family": 1.4966197676455135,
+            "median_family_size": 1,
+            "max_family_size": 12,
+            "n_size_1": 57195,
+            "n_size_2": 19064,
+            "n_size_3": 6252,
+            "n_size_gt3": 3134,
+            "pct_size_1": 0.6678148169770565,
+            "pct_size_2": 0.22259326288750073,
+            "pct_size_3": 0.07299900753108762,
+            "pct_size_gt3": 0.03659291260435519,
+            "n_ge2": 28450,
+            "pct_ge2": 0.33218518302294353,
+            "n_ge3": 9386,
+            "pct_ge3": 0.10959192013544282
+          },
+          "counts": {
+            "total_pairs": 190893,
+            "extracted_pairs": 128178,
+            "unmatched_pairs": 62715
+          }
+        }
+      }
+    },
+    "stage4_clean_qc": {
+      "status": "success",
+      "umi_extracted_dir": "/home/uniscan/BioNGS/results/example/umi_extracted/run1",
+      "qc_overview_root": "/home/uniscan/BioNGS/results/example/qc_overview/02_clean_after_umi/run1",
+      "qc_details_root": "/home/uniscan/BioNGS/results/example/qc_details/02_clean_after_umi/run1",
+      "per_population": {
+        "1": {
+          "r1": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1/1_R1.fastq.gz",
+          "r2": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1/1_R2.fastq.gz",
+          "qc_overview_dir": "/home/uniscan/BioNGS/results/example/qc_overview/02_clean_after_umi/run1/1",
+          "qc_details_dir": "/home/uniscan/BioNGS/results/example/qc_details/02_clean_after_umi/run1/1",
+          "r1_total_reads": 128178,
+          "r2_total_reads": 128178,
+          "r1_q30_rate": 0.9377042590015531,
+          "r2_q30_rate": 0.9555213461008861
+        }
+      }
+    },
+    "stage5_preprocess": {
+      "status": "failed",
+      "error": ""
+    }
+  },
+  "status": "running"
+}

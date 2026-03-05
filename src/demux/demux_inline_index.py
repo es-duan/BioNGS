@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from src.utils.fastq_io import (
     FastqFormatError,
@@ -24,14 +24,10 @@ class DemuxResult:
     index_lengths: Dict[str, int]
 
 
-def load_multiplex_csv(multiplex_csv: Path) -> Dict[str, str]:
+def load_multiplex_csv(multiplex_csv: Path) -> Dict[Tuple[str, str], str]:
     """
-    读取 multiplexing csv，返回 index -> population
-    支持：
-      - index
-      - R1_index
-    population 必须存在
-    不区分大小写
+    读取 multiplexing csv，返回 (R1_index, R2_index) -> population
+    要求列：Population, R1_index, R2_index（大小写不敏感）
     """
     with multiplex_csv.open("r", encoding="utf-8", errors="replace", newline="") as f:
         reader = csv.DictReader(f)
@@ -46,33 +42,33 @@ def load_multiplex_csv(multiplex_csv: Path) -> Dict[str, str]:
             raise RuntimeError(
                 f"multiplex csv must contain column: Population. Found: {reader.fieldnames}"
             )
-
         pop_col = header_map["population"]
 
-        # index 列自动识别
-        if "index" in header_map:
-            idx_col = header_map["index"]
-        elif "r1_index" in header_map:
-            idx_col = header_map["r1_index"]
-        else:
+        # 双 index 必须有
+        if "r1_index" not in header_map or "r2_index" not in header_map:
             raise RuntimeError(
-                f"multiplex csv must contain column: index or R1_index. Found: {reader.fieldnames}"
+                f"multiplex csv must contain columns: R1_index and R2_index. Found: {reader.fieldnames}"
             )
+        r1_col = header_map["r1_index"]
+        r2_col = header_map["r2_index"]
 
-        mapping: Dict[str, str] = {}
+        mapping: Dict[Tuple[str, str], str] = {}
         for row in reader:
-            idx = (row.get(idx_col) or "").strip()
+            r1 = (row.get(r1_col) or "").strip().upper()
+            r2 = (row.get(r2_col) or "").strip().upper()
             pop = (row.get(pop_col) or "").strip()
-            if not idx or not pop:
+            if not r1 or not r2 or not pop:
                 continue
-            if idx in mapping:
-                raise RuntimeError(f"Duplicate index in multiplex csv: {idx}")
-            mapping[idx] = pop
+
+            key = (r1, r2)
+            if key in mapping:
+                raise RuntimeError(f"Duplicate (R1_index,R2_index) in multiplex csv: {key}")
+            mapping[key] = pop
 
     if not mapping:
-        raise RuntimeError("multiplex csv produced empty index->population mapping")
+        raise RuntimeError("multiplex csv produced empty (R1_index,R2_index)->population mapping")
 
-    print(f"[Stage 2] Loaded {len(mapping)} index->population mappings.")
+    print(f"[Stage 2] Loaded {len(mapping)} (R1_index,R2_index)->population mappings.")
     return mapping
 
 
@@ -102,6 +98,7 @@ def demux_paired_inline_index(
     multiplex_csv: Path,
     outdir: Path,
     compress: bool = True,
+    strip_matched: bool = False
 ) -> DemuxResult:
     """
     Stage2 核心：
@@ -109,14 +106,27 @@ def demux_paired_inline_index(
     - 用 R1 前缀 inline index 精确匹配（不做错配容忍）
     - matched -> population 文件夹
     - unmatched -> unmatched_R1/R2
-    - demux 阶段就 strip index（matched 一定 strip；unmatched 也 strip 用统一 index_len）
+    - demux 只负责分群
+    - 是否 strip index 由 strip_matched 控制（默认不 strip）
+    - unmatched 永远原样输出（你现在就是这样做的）
     - 遇到坏记录：立即报错停机（FastqFormatError）
     """
     idx2pop = load_multiplex_csv(multiplex_csv)
-    index_lengths = {idx: len(idx) for idx in idx2pop.keys()}
-    # 常见情况：全等长
-    unique_lens = sorted(set(index_lengths.values()))
-    index_len_for_unmatched = max(unique_lens)
+
+    # 分别统计 R1 和 R2 的 index 长度（因为你文库是 R1/R2 都有 index）
+    r1_lens = [len(r1_idx) for (r1_idx, _r2_idx) in idx2pop.keys()]
+    r2_lens = [len(r2_idx) for (_r1_idx, r2_idx) in idx2pop.keys()]
+
+    max_r1_len = max(r1_lens)
+    max_r2_len = max(r2_lens)
+
+    # 保留原字段，但改成双端长度信息（供 metrics 用）
+    index_lengths = {
+        "r1_unique_lengths": sorted(set(r1_lens)),
+        "r2_unique_lengths": sorted(set(r2_lens)),
+        "r1_max_len": max_r1_len,
+        "r2_max_len": max_r2_len,
+    }
 
     outdir.mkdir(parents=True, exist_ok=True)
 
@@ -161,38 +171,39 @@ def demux_paired_inline_index(
                     record_no=record_no,
                 )
 
-            # inline index 从 R1 头部取（精确匹配）
-            # 用“所有 index 的最大长度”先取前缀，再精确比对（避免不同长度 index 时切片错位）
-            prefix = rec1.seq[:index_len_for_unmatched]
+            # dual inline index：要求 R1 和 R2 都匹配同一对 (R1_index, R2_index)
+            r1_head = rec1.seq[:max_r1_len].upper()
+            r2_head = rec2.seq[:max_r2_len].upper()
 
-            matched_idx = None
-            matched_pop = None
-            # 精确：尝试所有 idx（规模一般很小）
-            for idx, pop in idx2pop.items():
-                if rec1.seq.startswith(idx):
-                    matched_idx = idx
+            matched_key: Optional[Tuple[str, str]] = None
+            matched_pop: Optional[str] = None
+
+            for (r1_idx, r2_idx), pop in idx2pop.items():
+                if r1_head.startswith(r1_idx) and r2_head.startswith(r2_idx):
+                    matched_key = (r1_idx, r2_idx)
                     matched_pop = pop
                     break
 
             if matched_pop is None:
                 unmatched_pairs += 1
 
-                # unmatched：仍 strip（用统一 index_len_for_unmatched）
-                rec1s = strip_inline_index(rec1, index_len_for_unmatched)
-                rec2s = strip_inline_index(rec2, index_len_for_unmatched)
-
-                write_fastq_record(unmatched1, rec1s)
-                write_fastq_record(unmatched2, rec2s)
+                # unmatched：原样输出（不要 strip，保留证据，方便你排查到底是 index 错还是测序错）
+                write_fastq_record(unmatched1, rec1)
+                write_fastq_record(unmatched2, rec2)
                 continue
 
-            # matched：按 matched_idx 的长度 strip（更严格）
-            strip_len = len(matched_idx)
-            rec1s = strip_inline_index(rec1, strip_len)
-            rec2s = strip_inline_index(rec2, strip_len)
+            # matched：默认不裁剪；如需裁剪 inline index，则打开 strip_matched
+            if strip_matched:
+                r1_idx, r2_idx = matched_key  # matched_key 在这里一定不是 None
+                rec1_out = strip_inline_index(rec1, len(r1_idx))
+                rec2_out = strip_inline_index(rec2, len(r2_idx))
+            else:
+                rec1_out = rec1
+                rec2_out = rec2
 
             h1, h2 = get_handles(matched_pop)
-            write_fastq_record(h1, rec1s)
-            write_fastq_record(h2, rec2s)
+            write_fastq_record(h1, rec1_out)
+            write_fastq_record(h2, rec2_out)
 
             per_pop_pairs[matched_pop] = per_pop_pairs.get(matched_pop, 0) + 1
 

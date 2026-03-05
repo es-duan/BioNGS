@@ -1,0 +1,18 @@
+{
+  "status": "success",
+  "umi_extracted_dir": "/home/uniscan/BioNGS/results/example/umi_extracted/run1",
+  "qc_overview_root": "/home/uniscan/BioNGS/results/example/qc_overview/02_clean_after_umi/run1",
+  "qc_details_root": "/home/uniscan/BioNGS/results/example/qc_details/02_clean_after_umi/run1",
+  "per_population": {
+    "1": {
+      "r1": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1/1_R1.fastq.gz",
+      "r2": "/home/uniscan/BioNGS/results/example/umi_extracted/run1/1/1_R2.fastq.gz",
+      "qc_overview_dir": "/home/uniscan/BioNGS/results/example/qc_overview/02_clean_after_umi/run1/1",
+      "qc_details_dir": "/home/uniscan/BioNGS/results/example/qc_details/02_clean_after_umi/run1/1",
+      "r1_total_reads": 128178,
+      "r2_total_reads": 128178,
+      "r1_q30_rate": 0.9377042590015531,
+      "r2_q30_rate": 0.9555213461008861
+    }
+  }
+}

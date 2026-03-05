@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import gzip
 import pickle
-import subprocess
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple
+import subprocess
+import shutil
+import sys
 
 import pandas as pd
 
@@ -72,13 +74,24 @@ class UmiPattern:
         if "N" not in primer:
             raise ValueError(f"Primer must contain Ns (UMI region). Got: {primer}")
 
-        first_n = primer.find("N")
-        last_n = primer.rfind("N")
-        prefix = primer[:first_n]
-        suffix = primer[last_n + 1 :]
-        umi_len = (last_n - first_n + 1)
-        if umi_len <= 0:
-            raise ValueError(f"Invalid N block in primer: {primer}")
+        import re
+
+        m = re.search(r"N{10}", primer)
+        if m is None:
+            raise ValueError(f"Primer must contain exactly 10 consecutive Ns (UMI). Got: {primer}")
+
+        start = m.start()
+        end = m.end()
+
+        prefix = primer[:start]
+        suffix = primer[end:]
+        umi_len = 10
+
+        # 检查是否有额外 N（不允许）
+        outside = primer[:start] + primer[end:]
+        if "N" in outside:
+            raise ValueError(f"Primer contains extra Ns outside the 10N UMI block: {primer}")
+
         return UmiPattern(prefix=prefix, suffix=suffix, umi_len=umi_len)
 
 
@@ -101,10 +114,29 @@ def _try_extract_umi_and_trim(seq: str, qual: str, pat: UmiPattern) -> Tuple[Opt
     if len(seq) != len(qual):
         return None, None, None, "qual_len_mismatch"
 
-    pre_start = 0
-    pre_end = len(pat.prefix)
+    # pre_start = 0
+    # pre_end = len(pat.prefix)
+    #
+    # umi_start = pre_end
+    # umi_end = umi_start + pat.umi_len
+    #
+    # suf_start = umi_end
+    # suf_end = suf_start + len(pat.suffix)
+    #
+    # if len(seq) < suf_end:
+    #     return None, None, None, "too_short"
+    #
+    # if seq[pre_start:pre_end] != pat.prefix:
+    #     return None, None, None, "missing_prefix_left"
+    #
+    # if seq[suf_start:suf_end] != pat.suffix:
+    #     return None, None, None, "missing_anchor_right"
 
-    umi_start = pre_end
+    pos = seq.find(pat.prefix)
+    if pos < 0:
+        return None, None, None, "missing_prefix_anywhere"
+
+    umi_start = pos + len(pat.prefix)
     umi_end = umi_start + pat.umi_len
 
     suf_start = umi_end
@@ -112,9 +144,6 @@ def _try_extract_umi_and_trim(seq: str, qual: str, pat: UmiPattern) -> Tuple[Opt
 
     if len(seq) < suf_end:
         return None, None, None, "too_short"
-
-    if seq[pre_start:pre_end] != pat.prefix:
-        return None, None, None, "missing_prefix_left"
 
     if seq[suf_start:suf_end] != pat.suffix:
         return None, None, None, "missing_anchor_right"
@@ -129,6 +158,49 @@ def _try_extract_umi_and_trim(seq: str, qual: str, pat: UmiPattern) -> Tuple[Opt
     trimmed_qual = qual[suf_end:]
     return umi, trimmed_seq, trimmed_qual, None
 
+def _try_extract_umi_and_trim_relaxed(seq: str, qual: str, pat: UmiPattern) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+    """
+    RELAXED extraction:
+      - allow pat.prefix to appear anywhere in the read (seq.find)
+      - still requires exact match for pat.suffix at the expected position (after UMI)
+      - UMI length is fixed by pat.umi_len
+
+    Equivalent to: find(prefix) -> take next umi_len as UMI -> check suffix -> trim after suffix.
+    """
+    seq = seq.strip().upper()
+    qual = qual.strip()
+
+    if len(seq) != len(qual):
+        return None, None, None, "qual_len_mismatch"
+
+    pos = seq.find(pat.prefix)
+    if pos < 0:
+        return None, None, None, "missing_prefix_anywhere"
+
+    umi_start = pos + len(pat.prefix)
+    umi_end = umi_start + pat.umi_len
+    suf_start = umi_end
+    suf_end = suf_start + len(pat.suffix)
+
+    if len(seq) < suf_end:
+        return None, None, None, "too_short"
+
+    if seq[suf_start:suf_end] != pat.suffix:
+        # DEBUG: inspect failed anchor cases
+        #print("\n[DEBUG missing_anchor_right]")
+        #print("seq head:", seq[:80])
+        #print("expected suffix:", pat.suffix)
+        #print("observed around expected:", seq[umi_end - 5:umi_end + 20])
+
+        return None, None, None, "missing_anchor_right"
+
+    umi = seq[umi_start:umi_end]
+    if any(ch not in "ACGT" for ch in umi):
+        return None, None, None, "invalid_umi_chars"
+
+    trimmed_seq = seq[suf_end:]
+    trimmed_qual = qual[suf_end:]
+    return umi, trimmed_seq, trimmed_qual, None
 
 def _find_demux_pairs(demux_dir: Path) -> List[Tuple[str, Path, Path]]:
     pairs: List[Tuple[str, Path, Path]] = []
@@ -139,11 +211,6 @@ def _find_demux_pairs(demux_dir: Path) -> List[Tuple[str, Path, Path]]:
         r2s = sorted(list(pop_dir.glob("*_R2.fastq")) + list(pop_dir.glob("*_R2.fastq.gz")))
         if r1s and r2s:
             pairs.append((pop, r1s[0], r2s[0]))
-
-    um1 = list(demux_dir.glob("unmatched_R1.fastq")) + list(demux_dir.glob("unmatched_R1.fastq.gz"))
-    um2 = list(demux_dir.glob("unmatched_R2.fastq")) + list(demux_dir.glob("unmatched_R2.fastq.gz"))
-    if um1 and um2:
-        pairs.append(("unmatched", um1[0], um2[0]))
 
     if not pairs:
         raise FileNotFoundError(f"No demux FASTQ pairs found under: {demux_dir}")
@@ -209,8 +276,14 @@ def stage3_umi_extract(
         results/<exp>/umi_extracted/<run_tag>/P*/P*_UMI_dict.pkl
         results/<exp>/umi_extracted/<run_tag>/P*/P*_unmatched_UMI_R1.fastq.gz
         results/<exp>/umi_extracted/<run_tag>/P*/P*_unmatched_UMI_R2.fastq.gz
-        results/<exp>/umi_extracted/<run_tag>/P*/umi_extraction_summary.txt   <-- NEW
+        results/<exp>/umi_extracted/<run_tag>/P*/umi_extraction_summary.txt
       统计 unmatched_rate（pair 口径）并按阈值提示/询问停机（仅 ABNORMAL 才询问）
+
+    New behavior:
+      - 先跑严格模式
+      - 严格模式 unmatched_rate 过高则询问是否用“宽松模式”重跑 Stage 3
+      - 选择重跑：删除 Stage 3 输出目录并重建，覆盖旧数据
+      - 最终给出重跑后的报告（如果没重跑则给严格模式报告）
     """
     demux_dir = results_exp_dir / "demultiplexing" / run_tag
     out_root = results_exp_dir / "umi_extracted" / run_tag
@@ -228,142 +301,213 @@ def stage3_umi_extract(
 
     pop_pairs = _find_demux_pairs(demux_dir)
 
-    stage_total_pairs = 0
-    stage_unmatched_pairs = 0
-    stage_pair_reason = Counter()
-    stage_r1_reason = Counter()
-    stage_r2_reason = Counter()
+    def _run_once(extractor_fn, mode_name: str) -> Dict:
+        stage_total_pairs = 0
+        stage_unmatched_pairs = 0
+        stage_pair_reason = Counter()
+        stage_r1_reason = Counter()
+        stage_r2_reason = Counter()
+        SHORT_MINLEN = 150  # reporting-only: used to compute "effective unmatched rate"
 
-    per_pop_stats: Dict[str, Dict] = {}
+        per_pop_stats: Dict[str, Dict] = {}
 
-    for pop, r1_path, r2_path in pop_pairs:
-        pop_dir = out_root / pop
-        pop_dir.mkdir(parents=True, exist_ok=True)
+        for pop, r1_path, r2_path in pop_pairs:
+            pop_dir = out_root / pop
+            pop_dir.mkdir(parents=True, exist_ok=True)
 
-        out_r1 = pop_dir / f"{pop}_R1.fastq.gz"
-        out_r2 = pop_dir / f"{pop}_R2.fastq.gz"
-        out_um1 = pop_dir / f"{pop}_unmatched_UMI_R1.fastq.gz"
-        out_um2 = pop_dir / f"{pop}_unmatched_UMI_R2.fastq.gz"
-        out_pkl = pop_dir / f"{pop}_UMI_dict.pkl"
-        out_reason_txt = pop_dir / "umi_extraction_summary.txt"
+            out_r1 = pop_dir / f"{pop}_R1.fastq.gz"
+            out_r2 = pop_dir / f"{pop}_R2.fastq.gz"
+            out_um1 = pop_dir / f"{pop}_unmatched_UMI_R1.fastq.gz"
+            out_um2 = pop_dir / f"{pop}_unmatched_UMI_R2.fastq.gz"
+            out_pkl = pop_dir / f"{pop}_UMI_dict.pkl"
+            out_reason_txt = pop_dir / "umi_extraction_summary.txt"
 
-        umi_counts: Dict[str, int] = {}
-        total_pairs = 0
-        ok_pairs = 0
-        bad_pairs = 0
+            umi_counts: Dict[str, int] = {}
+            total_pairs = 0
+            ok_pairs = 0
+            bad_pairs = 0
+            # reporting-only counters (do NOT change writing behavior)
+            short_pairs = 0  # pairs where either mate < SHORT_MINLEN
+            usable_pairs = 0  # pairs where both mates >= SHORT_MINLEN
+            usable_bad_pairs = 0  # failed extraction among usable_pairs
+            usable_pair_reason = Counter()
 
-        r1_reason = Counter()
-        r2_reason = Counter()
-        pair_reason = Counter()
+            r1_reason = Counter()
+            r2_reason = Counter()
+            pair_reason = Counter()
 
-        with _open_out(out_r1) as w1, _open_out(out_r2) as w2, _open_out(out_um1) as wu1, _open_out(out_um2) as wu2:
-            it1 = _iter_fastq(r1_path)
-            it2 = _iter_fastq(r2_path)
+            with _open_out(out_r1) as w1, _open_out(out_r2) as w2, _open_out(out_um1) as wu1, _open_out(out_um2) as wu2:
+                it1 = _iter_fastq(r1_path)
+                it2 = _iter_fastq(r2_path)
 
-            for rec1, rec2 in zip(it1, it2):
-                (h1, s1, p1, q1) = rec1
-                (h2, s2, p2, q2) = rec2
-                total_pairs += 1
+                for rec1, rec2 in zip(it1, it2):
 
-                umi1, ts1, tq1, reason1 = _try_extract_umi_and_trim(s1, q1, pat_r1)
-                umi2, ts2, tq2, reason2 = _try_extract_umi_and_trim(s2, q2, pat_r2)
+                    def _rid(h: str) -> str:
+                        x = h.split()[0]
+                        if x.endswith("/1") or x.endswith("/2"):
+                            x = x[:-2]
+                        return x
 
-                if reason1 is not None:
-                    r1_reason[reason1] += 1
-                if reason2 is not None:
-                    r2_reason[reason2] += 1
+                    (h1, s1, p1, q1) = rec1
+                    (h2, s2, p2, q2) = rec2
+                    total_pairs += 1
 
-                if (reason1 is not None) or (reason2 is not None):
-                    bad_pairs += 1
-                    # pair-level: pick “first failure reason” for readability
-                    first = reason1 if reason1 is not None else reason2
-                    pair_reason[first] += 1
-                    _write_fastq_record(wu1, h1, s1, p1, q1)
-                    _write_fastq_record(wu2, h2, s2, p2, q2)
-                    continue
+                    # sanity: R1/R2 pairing
+                    if _rid(h1) != _rid(h2):
+                        raise RuntimeError(f"R1/R2 read-id mismatch: {h1} vs {h2}")
 
-                umi = f"{umi1}-{umi2}"
-                umi_counts[umi] = umi_counts.get(umi, 0) + 1
+                    # reporting-only: short vs usable (does NOT skip processing)
+                    is_short = (len(s1) < SHORT_MINLEN) or (len(s2) < SHORT_MINLEN)
+                    if is_short:
+                        short_pairs += 1
+                    else:
+                        usable_pairs += 1
 
-                new_h1 = f"{h1} UMI={umi}"
-                new_h2 = f"{h2} UMI={umi}"
+                    umi1, ts1, tq1, reason1 = extractor_fn(s1, q1, pat_r1)
+                    umi2, ts2, tq2, reason2 = extractor_fn(s2, q2, pat_r2)
 
-                ok_pairs += 1
-                _write_fastq_record(w1, new_h1, ts1, p1, tq1)
-                _write_fastq_record(w2, new_h2, ts2, p2, tq2)
+                    if reason1 is not None:
+                        r1_reason[reason1] += 1
+                    if reason2 is not None:
+                        r2_reason[reason2] += 1
 
-        with open(out_pkl, "wb") as pf:
-            pickle.dump(umi_counts, pf)
+                    if (reason1 is not None) or (reason2 is not None):
+                        bad_pairs += 1
+                        first = reason1 if reason1 is not None else reason2
+                        pair_reason[first] += 1
+                        # reporting-only: failures among usable pairs
+                        if not is_short:
+                            usable_bad_pairs += 1
+                            usable_pair_reason[first] += 1
+                        _write_fastq_record(wu1, h1, s1, p1, q1)
+                        _write_fastq_record(wu2, h2, s2, p2, q2)
+                        continue
 
-        _write_reason_report(
-            out_reason_txt,
-            exp=exp,
-            run_tag=run_tag,
-            pop=pop,
-            total_pairs=total_pairs,
-            extracted_pairs=ok_pairs,
-            unmatched_pairs=bad_pairs,
-            r1_reasons=r1_reason,
-            r2_reasons=r2_reason,
-            pair_reasons=pair_reason,
-        )
+                    umi = f"{umi1}-{umi2}"
+                    umi_counts[umi] = umi_counts.get(umi, 0) + 1
 
-        unmatched_rate = (bad_pairs / total_pairs) if total_pairs else 0.0
-        per_pop_stats[pop] = {
-            "total_pairs": total_pairs,
-            "extracted_pairs": ok_pairs,
-            "unmatched_pairs": bad_pairs,
-            "unmatched_rate": unmatched_rate,
-            "umi_dict_path": str(out_pkl),
-            "out_dir": str(pop_dir),
-            "reason_report": str(out_reason_txt),
-            "fail_reason_pair": dict(pair_reason),
-            "fail_reason_r1": dict(r1_reason),
-            "fail_reason_r2": dict(r2_reason),
+                    new_h1 = f"{h1} UMI={umi}"
+                    new_h2 = f"{h2} UMI={umi}"
+
+                    ok_pairs += 1
+                    _write_fastq_record(w1, new_h1, ts1, p1, tq1)
+                    _write_fastq_record(w2, new_h2, ts2, p2, tq2)
+
+                # 结束后检查是否有一边多记录
+                try:
+                    next(it1)
+                    raise RuntimeError(f"R1 has extra records beyond R2: {r1_path}")
+                except StopIteration:
+                    pass
+
+                try:
+                    next(it2)
+                    raise RuntimeError(f"R2 has extra records beyond R1: {r2_path}")
+                except StopIteration:
+                    pass
+
+            with open(out_pkl, "wb") as pf:
+                pickle.dump(umi_counts, pf)
+
+            _write_reason_report(
+                out_reason_txt,
+                exp=exp,
+                run_tag=run_tag,
+                pop=pop,
+                total_pairs=total_pairs,
+                extracted_pairs=ok_pairs,
+                unmatched_pairs=bad_pairs,
+                r1_reasons=r1_reason,
+                r2_reasons=r2_reason,
+                pair_reasons=pair_reason,
+            )
+
+            unmatched_rate = (bad_pairs / total_pairs) if total_pairs else 0.0
+            per_pop_stats[pop] = {
+                "total_pairs": total_pairs,
+                "extracted_pairs": ok_pairs,
+                "unmatched_pairs": bad_pairs,
+                "unmatched_rate": unmatched_rate,
+                # reporting-only
+                "short_pairs_lt150": short_pairs,
+                "short_rate_lt150": (short_pairs / total_pairs) if total_pairs else 0.0,
+                "usable_pairs_ge150": usable_pairs,
+                "usable_unmatched_pairs": usable_bad_pairs,
+                "usable_unmatched_rate": (usable_bad_pairs / usable_pairs) if usable_pairs else 0.0,
+                "usable_fail_reason_pair": dict(usable_pair_reason),
+                "umi_dict_path": str(out_pkl),
+                "out_dir": str(pop_dir),
+                "reason_report": str(out_reason_txt),
+                "fail_reason_pair": dict(pair_reason),
+                "fail_reason_r1": dict(r1_reason),
+                "fail_reason_r2": dict(r2_reason),
+            }
+
+            stage_total_pairs += total_pairs
+            stage_unmatched_pairs += bad_pairs
+            stage_pair_reason.update(pair_reason)
+            stage_r1_reason.update(r1_reason)
+            stage_r2_reason.update(r2_reason)
+
+        stage_unmatched_rate = (stage_unmatched_pairs / stage_total_pairs) if stage_total_pairs else 0.0
+
+        # -----------------------------
+        # Friendly terminal reporting
+        # -----------------------------
+        def _pfx(mode: str) -> str:
+            # Hide ":strict" to reduce noise; keep suffix for other modes (e.g., relaxed)
+            return "[Stage 3]" if mode == "strict" else f"[Stage 3:{mode}]"
+
+        print(f"\n{_pfx(mode_name)} UMI extraction completed.")
+        print(f"{_pfx(mode_name)} Raw unmatched_rate (all pairs) = {stage_unmatched_rate:.3%}")
+
+        # Effective rate (>=SHORT_MINLEN only) aggregated from per_pop_stats
+        stage_short = 0
+        stage_usable = 0
+        stage_usable_bad = 0
+        stage_usable_reason = Counter()
+
+        for d in (per_pop_stats or {}).values():
+            if not isinstance(d, dict):
+                continue
+            stage_short += int(d.get("short_pairs_lt150", 0))
+            stage_usable += int(d.get("usable_pairs_ge150", 0))
+            stage_usable_bad += int(d.get("usable_unmatched_pairs", 0))
+            stage_usable_reason.update(d.get("usable_fail_reason_pair") or {})
+
+        short_rate = (stage_short / stage_total_pairs) if stage_total_pairs else 0.0
+        usable_rate = (stage_usable_bad / stage_usable) if stage_usable else 0.0
+
+        print(f"{_pfx(mode_name)} Short pairs (<{SHORT_MINLEN} on either mate) = {stage_short} ({short_rate:.3%})")
+        print(f"{_pfx(mode_name)} Effective unmatched_rate (>= {SHORT_MINLEN} only) = {usable_rate:.3%}")
+
+        # Keep raw fail reasons for diagnosis
+        if sum(stage_pair_reason.values()) > 0:
+            print(f"{_pfx(mode_name)} Top pair-level fail reasons (all pairs):")
+            denom = sum(stage_pair_reason.values())
+            for k, v in stage_pair_reason.most_common(5):
+                print(f"  - {k:22s} {v:10d}  ({(v / denom):.2%})")
+
+        # Usable-only fail reasons (what users should focus on)
+        if sum(stage_usable_reason.values()) > 0:
+            print(f"{_pfx(mode_name)} Top pair-level fail reasons (>= {SHORT_MINLEN} only):")
+            denom = sum(stage_usable_reason.values())
+            for k, v in stage_usable_reason.most_common(5):
+                print(f"  - {k:22s} {v:10d}  ({(v / denom):.2%})")
+
+        # ---- RETURN RESULT (CRITICAL) ----
+        return {
+            "status": "success",
+            "mode": mode_name,
+            "umi_extracted_root": str(out_root),
+            "overall_unmatched_rate": stage_unmatched_rate,
+            "per_population": per_pop_stats,
+            "overall_fail_reason_pair": dict(stage_pair_reason),
+            "overall_fail_reason_r1": dict(stage_r1_reason),
+            "overall_fail_reason_r2": dict(stage_r2_reason),
         }
 
-        stage_total_pairs += total_pairs
-        stage_unmatched_pairs += bad_pairs
-        stage_pair_reason.update(pair_reason)
-        stage_r1_reason.update(r1_reason)
-        stage_r2_reason.update(r2_reason)
-
-    stage_unmatched_rate = (stage_unmatched_pairs / stage_total_pairs) if stage_total_pairs else 0.0
-
-    print("\n[Stage 3] UMI extraction completed.")
-    print(f"[Stage 3] Overall unmatched_rate = {stage_unmatched_rate:.3%}")
-
-    # 终端给“透明化”摘要（Top 5）
-    if sum(stage_pair_reason.values()) > 0:
-        print("[Stage 3] Top pair-level fail reasons:")
-        denom = sum(stage_pair_reason.values())
-        for k, v in stage_pair_reason.most_common(5):
-            print(f"  - {k:22s} {v:10d}  ({(v/denom):.2%})")
-
-    if stage_unmatched_rate > 0.50:
-        print("ABNORMAL: unmatched_rate > 50%. Recommended: stop and check anchor/primer/orientation/mismatch tolerance.")
-        ans = input("Stop now? (y/N) ").strip().lower()
-        if ans == "y":
-            return {"status": "aborted", "reason": "ABNORMAL unmatched_rate > 50% and user chose to stop"}
-    elif stage_unmatched_rate > 0.35:
-        print("STRONG WARNING: unmatched_rate > 35%. Please inspect anchor/primer/orientation/mismatch tolerance.")
-    elif stage_unmatched_rate > 0.20:
-        print("WARNING: unmatched_rate > 20%. Please inspect anchor/primer/orientation/mismatch tolerance.")
-
-    return {
-        "status": "success",
-        "umi_extracted_root": str(out_root),
-        "overall_unmatched_rate": stage_unmatched_rate,
-        "per_population": per_pop_stats,
-        "overall_fail_reason_pair": dict(stage_pair_reason),
-        "overall_fail_reason_r1": dict(stage_r1_reason),
-        "overall_fail_reason_r2": dict(stage_r2_reason),
-        "umi_patterns": {
-            "r1_prefix": pat_r1.prefix,
-            "r1_suffix": pat_r1.suffix,
-            "r1_umi_len": pat_r1.umi_len,
-            "r2_prefix": pat_r2.prefix,
-            "r2_suffix": pat_r2.suffix,
-            "r2_umi_len": pat_r2.umi_len,
-        },
-    }
+    # ---------- run strict once ----------
+    strict_result = _run_once(_try_extract_umi_and_trim, "strict")
+    # 先保证最小可运行：直接返回 strict_result
+    return strict_result
