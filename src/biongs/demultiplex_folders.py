@@ -39,7 +39,7 @@ def setup_terminal_logging(experiment_name, script_name):
     os.makedirs(log_dir, exist_ok=True)
 
     log_path = os.path.join(log_dir, f"{script_name}_terminal_output.txt")
-    log_file = open(log_path, 'a', encoding='utf-8')
+    log_file = open(log_path, 'w', encoding='utf-8')
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_file.write("\n" + "=" * 80 + "\n")

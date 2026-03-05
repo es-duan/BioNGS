@@ -2,14 +2,14 @@
 Script 4: Create a dictionary of UMI reads for each population
 
 Input: Demultiplexed population fastq files, UMI primer sequences from CSV
-Output: Dictionary where keys are UMI pairs and values are lists of R1 and R2 trimmed sequences
-        that match that UMI. Dictionaries are saved in respective demultiplexing/population
+Output: Dictionary where keys are UMI pairs and values are lists of R1 and R2 SeqRecord
+        objects that match that UMI. Dictionaries are saved in respective demultiplexing/population
         folders as pickle files named P{population_number}_UMI_dict
 Dependencies: Script 2 (demultiplex_index.py) must be run first
 Description: For each population, detect UMI sequences by aligning to primer sequences
              (the UMI is the 10 N bps on the primer). Forward UMIs are detected from R1,
-             reverse UMIs from R2. For each unique UMI pair, store matched sequences 
-             trimmed of the primer regions.
+             reverse UMIs from R2. For each unique UMI pair, store matched full SeqRecord
+             objects plus trim positions; trimming is done in alignment_prep.py.
 """
 
 import os
@@ -45,7 +45,7 @@ def setup_terminal_logging(experiment_name, script_name):
     os.makedirs(log_dir, exist_ok=True)
 
     log_path = os.path.join(log_dir, f"{script_name}_terminal_output.txt")
-    log_file = open(log_path, 'a', encoding='utf-8')
+    log_file = open(log_path, 'w', encoding='utf-8')
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_file.write("\n" + "=" * 80 + "\n")
@@ -285,8 +285,8 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     Returns:
     --------
     dict
-        Library with (forward_UMI, reverse_UMI) tuples as keys and 
-        {'R1': [sequences], 'R2': [sequences]} as values
+        Library with (forward_UMI, reverse_UMI) tuples as keys and
+        {'R1': [SeqRecord], 'R2': [SeqRecord], 'R1_trim_pos': pos, 'R2_trim_pos': pos} as values
     """
     population = f"P{population_num}"
     
@@ -355,20 +355,15 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
                 umi_library[umi_pair] = {
                     'R1': [],
                     'R2': [],
-                    'R1_ids': [],
-                    'R2_ids': []
+                    'R1_trim_pos': r1_trim_pos,
+                    'R2_trim_pos': r2_trim_pos
                 }
                 stats['unique_umis'] += 1
             
-            # Trim the sequences starting from the position after the primer
-            trimmed_r1_seq = r1_record.seq[r1_trim_pos:]
-            trimmed_r2_seq = r2_record.seq[r2_trim_pos:]
-            
-            # Store sequence and ID
-            umi_library[umi_pair]['R1'].append(str(trimmed_r1_seq))
-            umi_library[umi_pair]['R2'].append(str(trimmed_r2_seq))
-            umi_library[umi_pair]['R1_ids'].append(r1_id)
-            umi_library[umi_pair]['R2_ids'].append(r2_id)
+            # Store full SeqRecord objects (untrimmed) with original ID and quality
+            # Trimming will be done in alignment_prep.py
+            umi_library[umi_pair]['R1'].append(r1_record)
+            umi_library[umi_pair]['R2'].append(r2_record)
             
             # Print progress every 10000 reads
             if stats['total_reads'] % 10000 == 0:
@@ -376,11 +371,10 @@ def create_umi_dict(population_folder, population_num, gw_name, forward_primer_i
     
     # Validate that R1 and R2 lists have matching IDs for each UMI
     for umi_pair, data in umi_library.items():
-        if data['R1_ids'] != data['R2_ids']:
+        r1_ids = [record.id.split()[0] for record in data['R1']]
+        r2_ids = [record.id.split()[0] for record in data['R2']]
+        if r1_ids != r2_ids:
             print(f"    Warning: R1 and R2 IDs don't match for UMI {umi_pair}")
-        # Remove ID lists as they're no longer needed
-        del data['R1_ids']
-        del data['R2_ids']
     
     # Print summary
     print(f"    Summary for {population}:")
