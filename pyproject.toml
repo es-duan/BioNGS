@@ -49,8 +49,10 @@ fastqc-unpacker = "biongs.fastqc_unpacker:main"
 biongs-qc = "biongs.qc.qc_driver:main"
 
 [tool.setuptools]
-package-dir = {"biongs" = "src"}
-packages = ["biongs", "biongs.qc", "biongs.qc.io", "biongs.qc.stages"]
+# Use src-layout: src/biongs/ will be the biongs package
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["biongs*"]
 
 [tool.setuptools.package-data]
 "biongs" = ["*.sh"]
