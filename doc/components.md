@@ -1,17 +1,3 @@
-|   Component   |   Description |
-|---------------|---------------|
-|1. Function to generate folder | A function generates an empty folder |
-|2. Function to read large NGS fastq file | Need the appropriate function to read the type of file provided by user (text file?CSV?)
-|3. A function to SPLIT text based on indexes | Each bacteria has a primer associated with their DNA to idenitfy them with their population. This is the first node in the sorting process |
-|4. Identifying indexes and SORTING into respective folders | Along with identifying indexes to respective populations, this step may also expose errors in DNA scripts and therefore these would be sorted into a separate folder as well as each population being sorted separately | 
-|5. Function to further separate populations by UMI | After sorting to appropriate populations via 8 base index, further categorization is needed based on a UMI index to know which sequence to compare against for determining mutation rates |
-|6. Next a function to trim sequences (what criteria again?) | After sorting into appropriate UMI folders, sequences need to be trimmed to prep for comparison |
-|7. Function to align trimmed genes for comparison and sort into respective folder | Finally, DNA sequences should be prepped for comparison by being aligned |
-|8. Calculations for mutation rates | based on comparisons, execute calculations to determine mutation rates |
-|9. Function to convert calculations into a colorful convenient visualization | Ideally, a figure for making the data more digestable is an end goal |
-
-
-
 # Script 0: check quality of the NGS file
 - name: check_fastq_quality.py
 - input: input fastq files (R1.fastq and R2.fastq file)
@@ -53,11 +39,18 @@ name: check_index_quality.py
 - dependences: script 4
 - description: compare the number of UMI pairs per population (length of dictionary), compare the number of sequences per UMI per population (length of R1 and R2 lists)
 
-# Script 6: align sequences to reference gene
-- name: align_reads.py
-- input: dictionaries of UMI/sequences, reference gene.fasta (converted into an index for bowtie2 alignment)
-- output: 
+# Script 6: prepare UMI sequences for alignment to the genome
+- name: alignment_prep.py
+- input: UMI dictionary from step 4, UMI primer sequences
+- output: in a new folder under results/{experiment}/alignment/fastq, save R1 and R2 files for each UMI pair with more than 2 reads. The names should be {forwardUMI_reverseUMI}_R1.fastq and {forwardUMI_reverseUMI}_R2.fastq. Also include terminal output and csv version of terminal output with quality information that can be easily accessed in dataframe format.
+- description: Open the UMI dictionaries from script 4. Filter the libraries to remove UMI keys with only one forward and reverse read value. Trim the sequences to remove the entire primer sequence (detect matches to primer_after and set the last position as the trim position). Report the total number of keys, the number of keys that will move forward with alignment (greater than or equal to the minimum sequence pair), the number of keys removed (less than minimum) + percentage. Then, for the keys with more than or equal to the minimum, save the sequences in the output dir as R1 and R2 fastq files.
+
+
+# Script 7: use the bowtie aligner and SAMtools to align reads to the genome
+- name: align_reads.sh
+- input: UMI fastqs, saved from script 6 in results/{experiment}/alignment/fastq, rpoB reference genome index (prepared with bowtie in input_data/reference_docs)
+- output: sam files in vcf outputs in results/{experiment}/alignment/sam, bam outputs in results/{experiment}/alignment/bam, vcf outputs in results/{experiment}/alignment/vcf, with population folders, and named by UMI pair (same as fastq)
 - dependencies: script 4
-- description: for each UMI in the dictionary
+- description: use the bowtie_test.sh tool as a template. For each UMI pair in the alignment/fastq file, use bowtie2 to align the reads to the specified reference genome index. Use samtools to convert the outputted sam file to a bam file, then bcftools to convert the bam files to vcf files. Have an option to include command arguments: experiment (ex. example, this is consistent with previous python scripts), index (specify the reference genome index to use for alignment)
 
 # Script 7: 

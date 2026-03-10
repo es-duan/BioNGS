@@ -177,18 +177,25 @@ python demultiplex_UMI.py example
   - Each primer should contain exactly 10 consecutive N's indicating the UMI position
 
 **Output:**
-- Creates a UMI library pickle file for each population: `P{Population}_UMI_library.pkl`
+- Creates a UMI library pickle file for each population: `P{Population}_UMI_dict.pkl`
 - Library stored in `results/{experiment_name}/demultiplexing/P{Population}/`
 - Library structure: Dictionary with (forward_UMI, reverse_UMI) tuples as keys
   - Each value contains:
-    - `'R1'`: List of trimmed R1 sequences (primers removed)
-    - `'R2'`: List of trimmed R2 sequences (primers removed)
+    - `'R1'`: List of BioPython SeqRecord objects (full untrimmed R1 reads)
+    - `'R2'`: List of BioPython SeqRecord objects (full untrimmed R2 reads)
+    - `'R1_trim_pos'`: Position where R1 should be trimmed (after primer + UMI)
+    - `'R2_trim_pos'`: Position where R2 should be trimmed (after primer + UMI)
+- SeqRecord objects preserve original read IDs, sequences, and per-base quality scores
+- Trimming is deferred to Script 6 (alignment_prep.py) for flexibility
 - R1 and R2 sequences are in matched order by read pair
+- Also creates files for unmatched reads: `P{Population}_unmatched_UMI_R1.fastq` and `_R2.fastq`
 - Saves terminal output log to `results/{experiment_name}/logs/demultiplex_UMI_terminal_output.txt`
 
 **Processing Details:**
 - UMI extraction: Matches primer sequences before and after the 10 N's to find UMI location
-- Sequences trimmed to remove primer and UMI regions
+- Stores full untrimmed SeqRecord objects along with calculated trim positions
+- Trimming is performed downstream in Script 6 to preserve flexibility
+- Preserves all read metadata including IDs and quality scores
 - Verifies R1 and R2 read pairs match by checking headers
 
 ---
@@ -234,6 +241,66 @@ python check_UMI_quality.py example
 
 ---
 
+## Script 6: alignment_prep.py
+
+Prepares UMI-grouped sequences for downstream alignment by trimming stored SeqRecord objects and organizing them into per-UMI FASTQ files.
+
+**Usage:**
+```bash
+python alignment_prep.py <experiment_name> [--min-reads-per-umi N]
+```
+
+**Example:**
+```bash
+# Include all UMI pairs with at least 1 read (default)
+python alignment_prep.py example
+
+# Only process UMI pairs with at least 5 reads
+python alignment_prep.py example --min-reads-per-umi 5
+
+# Only process UMI pairs with at least 10 reads
+python alignment_prep.py example --min-reads-per-umi 10
+```
+
+**Input:**
+- Experiment name
+- UMI dictionary pickle files from `results/{experiment_name}/demultiplexing/P{Population}/`
+- Reads all files matching pattern `*_UMI_dict.pkl`
+- Optional: `--min-reads-per-umi` threshold (default: 2)
+
+**Output:**
+- Creates output directory at `results/{experiment_name}/alignment/fastq/`
+- For each population, creates a subfolder: `P{Population}/`
+- For each UMI pair meeting the minimum read threshold, creates two FASTQ files:
+  - `{forward_UMI}_{reverse_UMI}_R1.fastq`: Trimmed R1 reads for that UMI pair
+  - `{forward_UMI}_{reverse_UMI}_R2.fastq`: Trimmed R2 reads for that UMI pair
+- Sequences are trimmed using trim positions stored in Script 4
+- Preserves original read IDs and per-base quality scores from input data
+- UMI pair information added to sequence description line
+- Saves terminal output log to `results/{experiment_name}/logs/alignment_prep_terminal_output.txt`
+
+**Filtering:**
+- Only processes UMI pairs with at least `--min-reads-per-umi` sequences (default: 2)
+- Skips UMI pairs below threshold to reduce file count and focus on well-supported variants
+- Reports statistics on UMI pairs processed vs. skipped
+
+**Processing Details:**
+- Loads SeqRecord objects from UMI dictionaries
+- Trims sequences using stored `R1_trim_pos` and `R2_trim_pos` values
+- Slicing SeqRecord objects preserves per-base quality annotations
+- Backward compatible with older string-based dictionaries (if present)
+
+**Quality Preservation:**
+- Original FASTQ quality scores maintained through trimming
+- Read IDs preserved from source files
+- UMI pair metadata added to description field
+
+**Dependencies:**
+- Requires Script 4 (demultiplex_UMI.py) to be run first
+- Python packages: biopython, pickle
+
+---
+
 ## Complete Pipeline Example
 
 ```bash
@@ -254,4 +321,7 @@ python demultiplex_UMI.py example
 
 # Step 5: Check quality of UMI data
 python check_UMI_quality.py example
+
+# Step 6: Prepare sequences for alignment (trim and organize by UMI)
+python alignment_prep.py example --min-reads-per-umi 5
 ```

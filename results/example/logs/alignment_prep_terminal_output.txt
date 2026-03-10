@@ -1,0 +1,56 @@
+
+================================================================================
+Run started: 2026-03-04 16:33:38
+Script: alignment_prep
+================================================================================
+Logging terminal output to: results/example/logs/alignment_prep_terminal_output.txt
+
+================================================================================
+Alignment Preparation: example
+Minimum reads per UMI: 10
+================================================================================
+
+Searching for UMI libraries...
+Found 2 population(s)
+
+Output directory: results/example/alignment/fastq
+
+Processing P1...
+  Preparing sequences for P1...
+  Summary for P1:
+    Total UMI pairs: 60827
+    UMI pairs with >= 10 reads: 7
+    UMI pairs with < 10 reads (skipped): 60820
+    Reads trimmed and written: 74
+
+Processing P2...
+  Preparing sequences for P2...
+  Summary for P2:
+    Total UMI pairs: 85466
+    UMI pairs with >= 10 reads: 4
+    UMI pairs with < 10 reads (skipped): 85462
+    Reads trimmed and written: 42
+
+============================================================
+ALIGNMENT PREPARATION SUMMARY
+============================================================
+P1:
+  Total UMI pairs: 60827
+  UMI pairs with >= 10 reads: 7
+  UMI pairs with < 10 reads (skipped): 60820
+  Reads trimmed: 74
+P2:
+  Total UMI pairs: 85466
+  UMI pairs with >= 10 reads: 4
+  UMI pairs with < 10 reads (skipped): 85462
+  Reads trimmed: 42
+============================================================
+
+================================================================================
+Alignment preparation complete!
+================================================================================
+
+
+================================================================================
+Run ended: 2026-03-04 16:33:48
+================================================================================
