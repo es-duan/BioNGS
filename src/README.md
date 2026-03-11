@@ -13,7 +13,7 @@ conda env create -f environment.yml
 conda activate biongs
 ```
 
-This is the recommended approach as it installs all dependencies including bowtie2 (required for Script 6).
+This is the recommended approach as it installs all dependencies including bowtie2 (required for Step 6).
 
 ### Alternative: Manual Virtual Environment Setup
 
@@ -33,22 +33,82 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-**Note:** You must also have bowtie2 installed on your system for Script 6:
+**Note:** You must also have bowtie2 installed on your system for Step 6:
 - macOS: `brew install bowtie2`
 - Linux: `sudo apt-get install bowtie2`
 
-## Script 1: demultiplex_folders.py
+## Step 0: step0_file_confirmation.py
+
+Confirms that uploaded experiment files are present, correctly named, and sufficient for downstream pipeline stages.
+
+**Usage:**
+```bash
+python -m biongs.step0_file_confirmation <experiment_name>
+```
+
+**Example:**
+```bash
+python -m biongs.step0_file_confirmation example
+```
+
+**Input:**
+- Experiment name
+- Expected folder: `input_data/{experiment_name}/{experiment_name}_fastq/`
+- Expected CSV files in `input_data/{experiment_name}/`:
+  - `{experiment_name}_multiplexing_info.csv`
+  - `{experiment_name}_UMI_primers.csv`
+
+**Output:**
+- Terminal report showing:
+  - Which required files/folders are present or missing
+  - Detected R1/R2 fastq pairs
+  - Furthest runnable pipeline stage based on uploaded inputs
+  - Possible filename typos for near-matching files
+- Saved report file:
+  - `results/{experiment_name}/logs/file_confirmation_report.txt`
+
+---
+
+## Step 0a: step0a_fast_qc.py
+
+Runs FastQC on all raw FASTQ inputs and keeps only the HTML quality reports.
+
+**Usage:**
+```bash
+python -m biongs.step0a_fast_qc <experiment_name>
+```
+
+**Example:**
+```bash
+python -m biongs.step0a_fast_qc example
+```
+
+**Input:**
+- Experiment name
+- FASTQ files in `input_data/{experiment_name}/{experiment_name}_fastq/`
+
+**Output:**
+- One HTML report per FASTQ file in `results/{experiment_name}/qc/`
+- Named `{fastq_name}_fastqc.html`
+
+**Dependencies:**
+- FastQC must be installed. See https://github.com/s-andrews/FastQC/blob/master/INSTALL.md
+- Step 0 is recommended to confirm file locations before running
+
+---
+
+## Step 1: step1_demultiplex_folders.py
 
 Creates the folder structure for demultiplexed populations.
 
 **Usage:**
 ```bash
-python demultiplex_folders.py <experiment_name>
+python step1_demultiplex_folders.py <experiment_name>
 ```
 
 **Example:**
 ```bash
-python demultiplex_folders.py example
+python step1_demultiplex_folders.py example
 ```
 
 **Input:**
@@ -63,18 +123,18 @@ python demultiplex_folders.py example
 
 ---
 
-## Script 2: demultiplex_index.py
+## Step 2: step2_demultiplex_index.py
 
 Sorts NGS reads by DNA index into population-specific files. For each population in the CSV, finds fastq files matching that population's GW_name and extracts reads with matching indexes.
 
 **Usage:**
 ```bash
-python demultiplex_index.py <experiment_name>
+python step2_demultiplex_index.py <experiment_name>
 ```
 
 **Example:**
 ```bash
-python demultiplex_index.py example
+python step2_demultiplex_index.py example
 ```
 
 **Input:**
@@ -99,18 +159,18 @@ python demultiplex_index.py example
 
 ---
 
-## Script 3: check_index_quality.py
+## Step 2a: step2a_check_index_quality.py
 
-Analyzes the quality of demultiplexing results from Script 2 and generates visualizations of read distributions and quality metrics.
+Analyzes the quality of demultiplexing results from Step 2 and generates visualizations of read distributions and quality metrics.
 
 **Usage:**
 ```bash
-python check_index_quality.py <experiment_name>
+python step2a_check_index_quality.py <experiment_name>
 ```
 
 **Example:**
 ```bash
-python check_index_quality.py example
+python step2a_check_index_quality.py example
 ```
 
 **Input:**
@@ -150,23 +210,23 @@ python check_index_quality.py example
 - All plots saved as PNG files with multiple panels for easy comparison (with HTML fallback if PNG export fails)
 
 **Dependencies:**
-- Requires Script 2 (demultiplex_index.py) to be run first
+- Requires Step 2 (step2_demultiplex_index.py) to be run first
 - Python packages: altair, pandas, biopython, vl-convert-python (for PNG export)
 
 ---
 
-## Script 4: demultiplex_UMI.py
+## Step 3: step3_demultiplex_UMI.py
 
 Detects and extracts UMI (Unique Molecular Identifier) sequences from demultiplexed reads, creating libraries organized by UMI pairs for each population.
 
 **Usage:**
 ```bash
-python demultiplex_UMI.py <experiment_name>
+python step3_demultiplex_UMI.py <experiment_name>
 ```
 
 **Example:**
 ```bash
-python demultiplex_UMI.py example
+python step3_demultiplex_UMI.py example
 ```
 
 **Input:**
@@ -186,7 +246,7 @@ python demultiplex_UMI.py example
     - `'R1_trim_pos'`: Position where R1 should be trimmed (after primer + UMI)
     - `'R2_trim_pos'`: Position where R2 should be trimmed (after primer + UMI)
 - SeqRecord objects preserve original read IDs, sequences, and per-base quality scores
-- Trimming is deferred to Script 6 (alignment_prep.py) for flexibility
+- Trimming is deferred to Step 4 (step4_alignment_prep.py) for flexibility
 - R1 and R2 sequences are in matched order by read pair
 - Also creates files for unmatched reads: `P{Population}_unmatched_UMI_R1.fastq` and `_R2.fastq`
 - Saves terminal output log to `results/{experiment_name}/logs/demultiplex_UMI_terminal_output.txt`
@@ -194,24 +254,24 @@ python demultiplex_UMI.py example
 **Processing Details:**
 - UMI extraction: Matches primer sequences before and after the 10 N's to find UMI location
 - Stores full untrimmed SeqRecord objects along with calculated trim positions
-- Trimming is performed downstream in Script 6 to preserve flexibility
+- Trimming is performed downstream in Step 6 to preserve flexibility
 - Preserves all read metadata including IDs and quality scores
 - Verifies R1 and R2 read pairs match by checking headers
 
 ---
 
-## Script 5: check_UMI_quality.py
+## Step 3a: step3a_check_UMI_quality.py
 
-Analyzes the quality of UMI dictionaries created by Script 4 and generates visualizations comparing UMI distributions across populations.
+Analyzes the quality of UMI dictionaries created by Step 4 and generates visualizations comparing UMI distributions across populations.
 
 **Usage:**
 ```bash
-python check_UMI_quality.py <experiment_name>
+python step3a_check_UMI_quality.py <experiment_name>
 ```
 
 **Example:**
 ```bash
-python check_UMI_quality.py example
+python step3a_check_UMI_quality.py example
 ```
 
 **Input:**
@@ -236,30 +296,30 @@ python check_UMI_quality.py example
 - All plots saved as PNG files
 
 **Dependencies:**
-- Requires Script 4 (demultiplex_UMI.py) to be run first
+- Requires Step 3 (step3_demultiplex_UMI.py) to be run first
 - Python packages: altair, pandas, pickle, vl-convert-python (for PNG export)
 
 ---
 
-## Script 6: alignment_prep.py
+## Step 4: step4_alignment_prep.py
 
 Prepares UMI-grouped sequences for downstream alignment by trimming stored SeqRecord objects and organizing them into per-UMI FASTQ files.
 
 **Usage:**
 ```bash
-python alignment_prep.py <experiment_name> [--min-reads-per-umi N]
+python step4_alignment_prep.py <experiment_name> [--min-reads-per-umi N]
 ```
 
 **Example:**
 ```bash
 # Include all UMI pairs with at least 1 read (default)
-python alignment_prep.py example
+python step4_alignment_prep.py example
 
 # Only process UMI pairs with at least 5 reads
-python alignment_prep.py example --min-reads-per-umi 5
+python step4_alignment_prep.py example --min-reads-per-umi 5
 
 # Only process UMI pairs with at least 10 reads
-python alignment_prep.py example --min-reads-per-umi 10
+python step4_alignment_prep.py example --min-reads-per-umi 10
 ```
 
 **Input:**
@@ -274,7 +334,7 @@ python alignment_prep.py example --min-reads-per-umi 10
 - For each UMI pair meeting the minimum read threshold, creates two FASTQ files:
   - `{forward_UMI}_{reverse_UMI}_R1.fastq`: Trimmed R1 reads for that UMI pair
   - `{forward_UMI}_{reverse_UMI}_R2.fastq`: Trimmed R2 reads for that UMI pair
-- Sequences are trimmed using trim positions stored in Script 4
+- Sequences are trimmed using trim positions stored in Step 3
 - Preserves original read IDs and per-base quality scores from input data
 - UMI pair information added to sequence description line
 - Saves terminal output log to `results/{experiment_name}/logs/alignment_prep_terminal_output.txt`
@@ -296,7 +356,7 @@ python alignment_prep.py example --min-reads-per-umi 10
 - UMI pair metadata added to description field
 
 **Dependencies:**
-- Requires Script 4 (demultiplex_UMI.py) to be run first
+- Requires Step 3 (step3_demultiplex_UMI.py) to be run first
 - Python packages: biopython, pickle
 
 ---
@@ -307,21 +367,27 @@ python alignment_prep.py example --min-reads-per-umi 10
 # Navigate to src directory
 cd src
 
+# Step 0: Confirm files are present and correctly named
+python -m biongs.step0_file_confirmation example
+
+# Step 0a: Run FastQC quality checks (requires FastQC installed)
+python -m biongs.step0a_fast_qc example
+
 # Step 1: Create folder structure
-python demultiplex_folders.py example
+python step1_demultiplex_folders.py example
 
 # Step 2: Demultiplex reads by index for all populations
-python demultiplex_index.py example
+python step2_demultiplex_index.py example
 
-# Step 3: Check quality of demultiplexing results
-python check_index_quality.py example
+# Step 2a: Check quality of demultiplexing results
+python step2a_check_index_quality.py example
 
-# Step 4: Create UMI libraries for each population
-python demultiplex_UMI.py example
+# Step 3: Create UMI libraries for each population
+python step3_demultiplex_UMI.py example
 
-# Step 5: Check quality of UMI data
-python check_UMI_quality.py example
+# Step 3a: Check quality of UMI data
+python step3a_check_UMI_quality.py example
 
-# Step 6: Prepare sequences for alignment (trim and organize by UMI)
-python alignment_prep.py example --min-reads-per-umi 5
+# Step 4: Prepare sequences for alignment (trim and organize by UMI)
+python step4_alignment_prep.py example --min-reads-per-umi 5
 ```
