@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script 7: Align reads to reference genome using Bowtie2, SAMtools, and BCFtools
+# Step 5: Align reads to reference genome using Bowtie2, SAMtools, and BCFtools
 # Usage: bash align_reads.sh <experiment> <reference_index> <reference_fasta>
 # Example: bash align_reads.sh example input_data/reference_docs/rpoB_index/rpoB_index input_data/reference_docs/rpoBsequence.fasta
 
@@ -26,7 +26,7 @@ VCF_DIR="results/${EXPERIMENT}/alignment/vcf"
 # Check if input directory exists
 if [ ! -d "$FASTQ_DIR" ]; then
     echo "Error: Input directory $FASTQ_DIR does not exist."
-    echo "Please run alignment_prep.py (script 6) first."
+    echo "Please run alignment_prep.py (step 4) first."
     exit 1
 fi
 
@@ -66,6 +66,11 @@ for pop_dir in "$FASTQ_DIR"/*; do
         population=$(basename "$pop_dir")
         echo "Processing population: $population"
         
+        # Create population subdirectories
+        mkdir -p "$SAM_DIR/$population"
+        mkdir -p "$BAM_DIR/$population"
+        mkdir -p "$VCF_DIR/$population"
+        
         # Find all R1 fastq files in this population
         for r1_file in "$pop_dir"/*_R1.fastq; do
             if [ -f "$r1_file" ]; then
@@ -84,9 +89,9 @@ for pop_dir in "$FASTQ_DIR"/*; do
                 echo "  Processing UMI pair: $umi_name"
                 
                 # Define output file paths
-                sam_file="$SAM_DIR/${umi_name}.sam"
-                bam_file="$BAM_DIR/${umi_name}.bam"
-                vcf_file="$VCF_DIR/${umi_name}.vcf"
+                sam_file="$SAM_DIR/$population/${umi_name}.sam"
+                bam_file="$BAM_DIR/$population/${umi_name}.bam"
+                vcf_file="$VCF_DIR/$population/${umi_name}.vcf"
                 
                 # Step 1: Run Bowtie2 alignment
                 echo "    Running Bowtie2 alignment..."
@@ -133,9 +138,9 @@ echo "Successful alignments: $successful_alignments"
 echo "Failed alignments: $failed_alignments"
 echo ""
 echo "Output locations:"
-echo "  SAM files: $SAM_DIR"
-echo "  BAM files: $BAM_DIR"
-echo "  VCF files: $VCF_DIR"
+echo "  SAM files: $SAM_DIR/{population}/"
+echo "  BAM files: $BAM_DIR/{population}/"
+echo "  VCF files: $VCF_DIR/{population}/"
 echo "=========================================="
 
 # Exit with appropriate status code
