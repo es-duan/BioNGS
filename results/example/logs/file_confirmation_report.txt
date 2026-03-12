@@ -1,5 +1,5 @@
 ========================================================================
-Script 0 Report: File Confirmation for experiment 'example'
+Step 0 Report: File Confirmation for experiment 'example'
 ========================================================================
 
 Required inputs:
@@ -8,16 +8,16 @@ Required inputs:
 - At least one R1/R2 fastq pair: present
 - input_data/example/example_multiplexing_info.csv: present
 - input_data/example/example_UMI_primers.csv: present
-- FastQC (required for Script 0.5): NOT INSTALLED
+- FastQC (required for Step 0a): NOT INSTALLED
 
 Detected fastq pairs: 2
   - P22R1_R1_001.fastq <-> P22R1_R2_001.fastq
   - P22R2_R1_001.fastq <-> P22R2_R2_001.fastq
 
 Furthest runnable stage:
-- Script 7 can run (all required upload inputs are present).
+- Step 6 can run (all required upload inputs are present).
 
-Warning (Script 0.5): FastQC is not installed and Script 0.5 cannot run. See https://github.com/s-andrews/FastQC/blob/master/INSTALL.md for instructions, then re-run Script 0 to confirm.
+Warning (Step 0a): FastQC is not installed and Step 0a cannot run. See https://github.com/s-andrews/FastQC/blob/master/INSTALL.md for instructions, then re-run Step 0 to confirm.
 
 Possible naming typos:
 - none detected
