@@ -16,7 +16,6 @@ import csv
 import argparse
 import glob
 import gzip
-import shutil
 import sys
 import atexit
 from datetime import datetime
@@ -100,8 +99,7 @@ def find_multiplexing_csv(experiment_name):
 def find_fastq_files(experiment_name, gw_name):
     """
     Find R1 and R2 fastq files for a given experiment and GW_name.
-    Handles both regular and gzipped fastq files. If gzipped files are found,
-    they will be decompressed before processing.
+    Handles both regular and gzipped fastq files.
     
     Parameters:
     -----------
@@ -113,8 +111,7 @@ def find_fastq_files(experiment_name, gw_name):
     Returns:
     --------
     tuple or None
-        (r1_path, r2_path) paths to the R1 and R2 fastq files (unzipped if needed), 
-        or None if not found
+        (r1_path, r2_path) paths to the R1 and R2 fastq files, or None if not found
     """
     input_dir = os.path.join("input_data", experiment_name)
     
@@ -146,49 +143,14 @@ def find_fastq_files(experiment_name, gw_name):
     r1_path = r1_files[0]
     r2_path = r2_files[0]
     
-    # Unzip files if they are gzipped
-    if r1_path.endswith('.gz'):
-        print(f"  Decompressing {os.path.basename(r1_path)}...")
-        r1_path = decompress_gz_file(r1_path)
-    
-    if r2_path.endswith('.gz'):
-        print(f"  Decompressing {os.path.basename(r2_path)}...")
-        r2_path = decompress_gz_file(r2_path)
-    
     return r1_path, r2_path
 
 
-def decompress_gz_file(gz_path):
-    """
-    Decompress a gzipped file and return the path to the decompressed file.
-    
-    Parameters:
-    -----------
-    gz_path : str
-        Path to the gzipped file
-        
-    Returns:
-    --------
-    str
-        Path to the decompressed file
-    """
-    # Create output path by removing .gz extension
-    output_path = gz_path[:-3] if gz_path.endswith('.gz') else gz_path + '.unzipped'
-    
-    # Skip if already decompressed
-    if os.path.exists(output_path):
-        print(f"    Using existing decompressed file: {os.path.basename(output_path)}")
-        return output_path
-    
-    # Decompress the file
-    try:
-        with gzip.open(gz_path, 'rb') as f_in:
-            with open(output_path, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        print(f"    Decompressed to: {os.path.basename(output_path)}")
-        return output_path
-    except Exception as e:
-        raise IOError(f"Failed to decompress {gz_path}: {e}")
+def open_fastq_file(path):
+    """Open FASTQ files in text mode, supporting both plain and gzipped files."""
+    if path.endswith('.gz'):
+        return gzip.open(path, 'rt')
+    return open(path, 'r')
 
 
 def load_populations(csv_path):
@@ -274,7 +236,7 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir):
     unmatched_r2_handle = open(unmatched_r2_path, 'w')
     
     # Parse both fastq files simultaneously
-    with open(r1_fastq, 'r') as r1_handle, open(r2_fastq, 'r') as r2_handle:
+    with open_fastq_file(r1_fastq) as r1_handle, open_fastq_file(r2_fastq) as r2_handle:
         r1_records = SeqIO.parse(r1_handle, 'fastq')
         r2_records = SeqIO.parse(r2_handle, 'fastq')
         

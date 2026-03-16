@@ -21,6 +21,12 @@ class PresenceSummary:
     fastqc_installed: bool
 
 
+def _is_fastq_name(filename: str) -> bool:
+    """Return True if a filename looks like a FASTQ file (plain or gzipped)."""
+    lowered = filename.lower()
+    return lowered.endswith((".fastq", ".fq", ".fastq.gz", ".fq.gz"))
+
+
 def _find_fastq_pairs(fastq_dir: Path) -> list[tuple[Path, Path]]:
     """Return matched R1/R2 fastq pairs from a fastq directory."""
     if not fastq_dir.exists() or not fastq_dir.is_dir():
@@ -31,7 +37,7 @@ def _find_fastq_pairs(fastq_dir: Path) -> list[tuple[Path, Path]]:
             path
             for path in fastq_dir.iterdir()
             if path.is_file()
-            and path.suffix.lower() in {".fastq", ".fq"}
+            and _is_fastq_name(path.name)
             and "_R1" in path.name
         ]
     )
@@ -99,7 +105,9 @@ def find_possible_typos(experiment_name: str, repo_root: Path) -> list[tuple[str
         if item.name in expected_names:
             continue
 
-        if item.is_file() and item.suffix.lower() not in {".csv", ".fastq", ".fq"}:
+        if item.is_file() and not (
+            item.suffix.lower() == ".csv" or _is_fastq_name(item.name)
+        ):
             continue
 
         close = difflib.get_close_matches(item.name, expected_names, n=1, cutoff=0.6)

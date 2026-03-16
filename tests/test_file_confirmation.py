@@ -34,6 +34,30 @@ def test_file_confirmation_fastq_only(tmp_path, monkeypatch):
     assert "Step 0a can run" in report
 
 
+def test_file_confirmation_gz_fastq_only(tmp_path, monkeypatch):
+    """Only gzipped fastq uploads with fastqc installed should allow Step 0a."""
+    experiment_name = "exp_a_gz"
+    experiment_dir = tmp_path / "input_data" / experiment_name
+    fastq_dir = experiment_dir / f"{experiment_name}_fastq"
+    fastq_dir.mkdir(parents=True)
+
+    (fastq_dir / "P22R1_R1_001.fastq.gz").write_bytes(b"dummy")
+    (fastq_dir / "P22R1_R2_001.fastq.gz").write_bytes(b"dummy")
+
+    monkeypatch.setattr(file_confirmation.shutil, "which", lambda name: "/usr/bin/fastqc" if name == "fastqc" else None)
+
+    summary, pairs = file_confirmation.collect_presence(experiment_name, tmp_path)
+    report = file_confirmation.build_report(experiment_name, summary, pairs, [])
+
+    assert summary.experiment_dir_exists is True
+    assert summary.has_fastq_pairs is True
+    assert summary.multiplexing_csv_exists is False
+    assert summary.umi_csv_exists is False
+    assert summary.fastqc_installed is True
+    assert len(pairs) == 1
+    assert "Step 0a can run" in report
+
+
 def test_file_confirmation_all_required_inputs_and_typo_hint(tmp_path, monkeypatch):
     """All expected inputs with fastqc installed should allow full pipeline and include typo suggestions."""
     experiment_name = "exp_b"

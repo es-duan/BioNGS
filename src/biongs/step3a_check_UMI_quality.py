@@ -89,6 +89,8 @@ def analyze_umi_dict(umi_dict):
         - num_umis: Total number of unique UMI pairs
         - reads_per_umi: List of read counts for each UMI
         - total_reads: Total number of reads in dictionary
+        - min_reads_per_umi: Minimum reads among UMI pairs
+        - max_reads_per_umi: Maximum reads among UMI pairs
     """
     reads_per_umi = []
     
@@ -99,7 +101,9 @@ def analyze_umi_dict(umi_dict):
     return {
         'num_umis': len(umi_dict),
         'reads_per_umi': reads_per_umi,
-        'total_reads': sum(reads_per_umi) if reads_per_umi else 0
+        'total_reads': sum(reads_per_umi) if reads_per_umi else 0,
+        'min_reads_per_umi': min(reads_per_umi) if reads_per_umi else 0,
+        'max_reads_per_umi': max(reads_per_umi) if reads_per_umi else 0,
     }
 
 
@@ -314,6 +318,8 @@ def check_umi_quality(experiment_name):
             libraries_data[population] = analyze_umi_dict(umi_dict)
             print(f"    UMI pairs: {libraries_data[population]['num_umis']}, "
                   f"Total reads: {libraries_data[population]['total_reads']}")
+            print(f"    Reads per UMI - Min: {libraries_data[population]['min_reads_per_umi']}, "
+                  f"Max: {libraries_data[population]['max_reads_per_umi']}")
         except Exception as e:
             print(f"    Error loading {population}: {e}")
             continue

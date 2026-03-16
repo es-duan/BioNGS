@@ -17,3 +17,5 @@ src/biongs.egg-info/dependency_links.txt
 src/biongs.egg-info/entry_points.txt
 src/biongs.egg-info/requires.txt
 src/biongs.egg-info/top_level.txt
+tests/test_fast_qc.py
+tests/test_file_confirmation.py

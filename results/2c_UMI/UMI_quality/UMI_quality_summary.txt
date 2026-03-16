@@ -1,0 +1,13 @@
+UMI Quality Summary Statistics
+================================================================================
+
+Population: P1
+  Number of unique UMI pairs: 6529
+  Total reads: 6566
+  Reads per UMI - Min: 1, Max: 2, Mean: 1.0, Median: 1.0
+
+Population: P2
+  Number of unique UMI pairs: 6941
+  Total reads: 6986
+  Reads per UMI - Min: 1, Max: 3, Mean: 1.0, Median: 1.0
+

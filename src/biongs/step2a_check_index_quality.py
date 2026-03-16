@@ -16,6 +16,7 @@ Usage: python step2a_check_index_quality.py <experiment_name>
 import os
 import csv
 import glob
+import gzip
 import argparse
 from collections import defaultdict
 from Bio import SeqIO
@@ -68,6 +69,8 @@ def find_input_fastq_files(experiment_name):
     r1_files = []
     r1_files.extend(glob.glob(os.path.join(input_dir, "**", "*_R1*.fastq"), recursive=True))
     r1_files.extend(glob.glob(os.path.join(input_dir, "**", "*_R1*.fq"), recursive=True))
+    r1_files.extend(glob.glob(os.path.join(input_dir, "**", "*_R1*.fastq.gz"), recursive=True))
+    r1_files.extend(glob.glob(os.path.join(input_dir, "**", "*_R1*.fq.gz"), recursive=True))
     
     fastq_pairs = []
     
@@ -82,7 +85,17 @@ def find_input_fastq_files(experiment_name):
         if os.path.exists(r2_file):
             fastq_pairs.append((gw_name, r1_file, r2_file))
     
+    if not fastq_pairs:
+        print(f"Warning: No input FASTQ pairs found for {experiment_name} (supports .fastq/.fq and .fastq.gz/.fq.gz).")
+
     return fastq_pairs
+
+
+def open_fastq_file(fastq_path):
+    """Open FASTQ files in text mode, supporting both plain and gzipped files."""
+    if fastq_path.lower().endswith('.gz'):
+        return gzip.open(fastq_path, 'rt')
+    return open(fastq_path, 'r')
 
 
 def count_reads_in_fastq(fastq_path):
@@ -103,7 +116,7 @@ def count_reads_in_fastq(fastq_path):
         return 0
     
     count = 0
-    with open(fastq_path, 'r') as f:
+    with open_fastq_file(fastq_path) as f:
         for record in SeqIO.parse(f, 'fastq'):
             count += 1
     return count
@@ -129,7 +142,7 @@ def get_read_lengths(fastq_path, max_reads=10000):
         return []
     
     lengths = []
-    with open(fastq_path, 'r') as f:
+    with open_fastq_file(fastq_path) as f:
         for i, record in enumerate(SeqIO.parse(f, 'fastq')):
             if i >= max_reads:
                 break
