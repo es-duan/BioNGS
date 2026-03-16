@@ -1,9 +1,2 @@
 [console_scripts]
-alignment-prep = biongs.step4_alignment_prep:main
-check-index-quality = biongs.step2a_check_index_quality:main
-check-umi-quality = biongs.step3a_check_UMI_quality:main
-demultiplex-folders = biongs.step1_demultiplex_folders:main
-demultiplex-index = biongs.step2_demultiplex_index:main
-demultiplex-umi = biongs.step3_demultiplex_UMI:main
-fast-qc = biongs.step0a_fast_qc:main
-file-confirmation = biongs.step0_file_confirmation:main
+biongs = primerforge.cli:main

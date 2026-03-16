@@ -5,64 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "biongs"
 version = "0.1.0"
-description = "Pipeline for processing and analyzing Next Generation Sequencing data for bacterial mutation rate analysis"
-readme = "README.md"
-requires-python = ">=3.10"
-license = {file = "LICENSE"}
-authors = [
-    {name = "BioNGS Team"}
-]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Bio-Informatics",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-]
-
-dependencies = [
-    "biopython>=1.80",
-    "pandas>=1.3.0",
-    "numpy>=1.20.0",
-    "matplotlib>=3.5.0",
-    "altair>=5.0.0",
-    "vl-convert-python>=1.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "black>=23.0",
-    "flake8>=6.0",
-]
+requires-python = ">=3.9"
 
 [project.scripts]
-file-confirmation = "biongs.step0_file_confirmation:main"
-fast-qc = "biongs.step0a_fast_qc:main"
-demultiplex-folders = "biongs.step1_demultiplex_folders:main"
-demultiplex-index = "biongs.step2_demultiplex_index:main"
-check-index-quality = "biongs.step2a_check_index_quality:main"
-demultiplex-umi = "biongs.step3_demultiplex_UMI:main"
-check-umi-quality = "biongs.step3a_check_UMI_quality:main"
-alignment-prep = "biongs.step4_alignment_prep:main"
+biongs = "primerforge.cli:main"
 
 [tool.setuptools]
-# Use src-layout: src/biongs/ will be the biongs package
+package-dir = {"" = "src"}
+
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["biongs*"]
-
-[tool.setuptools.package-data]
-"biongs" = ["*.sh"]
-
-[tool.black]
-line-length = 100
-target-version = ['py310']
-
-[tool.pytest.ini_options]
-testpaths = ["tests", "results/tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]

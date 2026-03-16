@@ -13,7 +13,7 @@ conda env create -f environment.yml
 conda activate biongs
 ```
 
-This is the recommended approach as it installs all dependencies including bowtie2 (required for Step 6).
+This is the recommended approach as it installs all dependencies including bowtie2 (required for Script 6).
 
 ### Alternative: Manual Virtual Environment Setup
 
@@ -33,361 +33,287 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-**Note:** You must also have bowtie2 installed on your system for Step 6:
+**Note:** You must also have bowtie2 installed on your system for Script 6:
 - macOS: `brew install bowtie2`
 - Linux: `sudo apt-get install bowtie2`
 
-## Step 0: step0_file_confirmation.py
+This document describes the internal structure and execution logic of the BioNGS pipeline.
 
-Confirms that uploaded experiment files are present, correctly named, and sufficient for downstream pipeline stages.
+The pipeline performs:
 
-**Usage:**
-```bash
-python -m biongs.step0_file_confirmation <experiment_name>
-```
-
-**Example:**
-```bash
-python -m biongs.step0_file_confirmation example
-```
-
-**Input:**
-- Experiment name
-- Expected folder: `input_data/{experiment_name}/{experiment_name}_fastq/`
-- Expected CSV files in `input_data/{experiment_name}/`:
-  - `{experiment_name}_multiplexing_info.csv`
-  - `{experiment_name}_UMI_primers.csv`
-
-**Output:**
-- Terminal report showing:
-  - Which required files/folders are present or missing
-  - Detected R1/R2 fastq pairs
-  - Furthest runnable pipeline stage based on uploaded inputs
-  - Possible filename typos for near-matching files
-- Saved report file:
-  - `results/{experiment_name}/logs/file_confirmation_report.txt`
+1. Demultiplexing by index
+2. Minimum read-length filtering (default 150 bp)
+3. Adaptive threshold warning
+4. Dual-layer quality control reporting
 
 ---
 
-## Step 0a: step0a_fast_qc.py
+#  Pipeline Overview
 
-Runs FastQC on all raw FASTQ inputs and keeps only the HTML quality reports.
-
-**Usage:**
+Execution entry point:
 ```bash
-python -m biongs.step0a_fast_qc <experiment_name>
+python -m src.qc.qc_driver <experiment> --gw_name <GW_NAME>
+```
+## Highpoint flow chart
 ```
 
-**Example:**
-```bash
-python -m biongs.step0a_fast_qc example
+RAW FASTQ
+   │
+   ├── QC Detail (RAW)  ─────────► qc_details/00_raw
+   │
+   ├── demultiplex
+   │       │
+   │       ├── drop reads <150 bp(deforlt)
+   │       ├── index Demultiplexing
+   │       │
+   │       └── output FASTQ ───────► demultiplexing/run_150
+   │
+   ├── QC Overview ─────────────► qc_overview/run_150
+   │
+   └── QC Details (After demultiplexing) ────────► qc_details/02_after_demux/run_150
+
+```
+At this stage, discard_rate is evaluated.
+
+### If Discard Rate is High
+Instead of overwriting results, the pipeline supports branching runs:
+```
+               ┌────────────── run_150 ───────────────┐
+               │   demultiplexing/                    │
+RAW FASTQ ─────┼── qc_overview/run_150/               │
+               │   qc_details/run_150/                │
+               └──────────────────────────────────────┘
+                               │
+                               ▼
+                     keep what pipeline did? -► yes -►keep the run_150 data
+                               │
+                               ▼
+                               No
+                               │
+                               ▼                               
+                     User selects new min_len (i.e. 130)
+                               │
+                               ▼
+               ┌────────────── run_130 ───────────────┐
+               │   demultiplexing/                    │
+               │   qc_overview/run_130/               │
+               │   qc_details/run_130/                │
+               └──────────────────────────────────────┘
 ```
 
-**Input:**
-- Experiment name
-- FASTQ files in `input_data/{experiment_name}/{experiment_name}_fastq/`
+## Key Design Feature
 
-**Output:**
-- One HTML report per FASTQ file in `results/{experiment_name}/qc/`
-- Named `{fastq_name}_fastqc.html`
+Each threshold creates an independent versioned run:
+- run_150
+- run_130
+- run_120
 
-**Dependencies:**
-- FastQC must be installed. See https://github.com/s-andrews/FastQC/blob/master/INSTALL.md
-- Step 0 is recommended to confirm file locations before running
+
+All stored side-by-side.
+
+No data is overwritten.
 
 ---
 
-## Step 1: step1_demultiplex_folders.py
-
-Creates the folder structure for demultiplexed populations.
-
-**Usage:**
-```bash
-python step1_demultiplex_folders.py <experiment_name>
+#  Source Directory Structure
 ```
-
-**Example:**
-```bash
-python step1_demultiplex_folders.py example
+├── src/ # Source code
+│    ├── qc/ # QC driver & fancy reports
+│    │    ├── entry_qc.py
+│    │    ├── qc_driver.py
+│    │    ├── oi/ 
+│    │    │    ├── manifest.py
+│    │    │    └── paths.py
+│    │    ├── stages/
+│    │    │     ├── stage_after_demux.py
+│    │    │     └── stage_raw.py
+│    │    ├── entry_qc.py
+│    │    └── qc_driver.py
+│    │
+│    ├── check_index_quality.py
+│    ├── check_UMI_quality.py
+│    ├── demultiplex_folders.py
+│    ├── demultiplex_index.py
+│    ├── demultiplex_UMI.py
+│    ├── fastqc_unpacker.py
+│    └── README.md
 ```
-
-**Input:**
-- Experiment name (script will look for a multiplexing CSV in `input_data/{experiment_name}/`)
-- CSV file should contain columns: Time, Population, GW_name, R1_index, R2_index
-
-**Output:**
-- Creates output directory at `results/{experiment_name}/demultiplexing/`
-- Creates a folder for each population (named P{Population}, e.g., "P1" for Population 1)
-- Creates empty R1 and R2 fastq files in each folder
-- Saves terminal output log to `results/{experiment_name}/logs/demultiplex_folders_terminal_output.txt`
 
 ---
 
-## Step 2: step2_demultiplex_index.py
-
-Sorts NGS reads by DNA index into population-specific files. For each population in the CSV, finds fastq files matching that population's GW_name and extracts reads with matching indexes.
-
-**Usage:**
-```bash
-python step2_demultiplex_index.py <experiment_name>
-```
-
-**Example:**
-```bash
-python step2_demultiplex_index.py example
-```
-
-**Input:**
-- Experiment name
-- Script reads the multiplexing CSV to find all populations and their GW_names
-- For each population, finds fastq files in `input_data/{experiment_name}/` matching the GW_name
-- Processes each population's fastq files independently
-- Supports both regular (`*.fastq`, `*.fq`) and gzipped (`*.fastq.gz`, `*.fq.gz`) input files
-- Automatically decompresses gzipped files before processing
-
-**Output:**
-- Populates population-specific fastq files with matched reads in `results/{experiment_name}/demultiplexing/P{Population}/`
-- Creates files for short reads (< 150 bp): `{GW_name}_short_reads_R1.fastq` and `{GW_name}_short_reads_R2.fastq`
-- Creates files for unmatched reads: `{GW_name}_unmatched_reads_R1.fastq` and `{GW_name}_unmatched_reads_R2.fastq`
-- Prints summary statistics for each population showing read distribution
-- Saves terminal output log to `results/{experiment_name}/logs/demultiplex_index_terminal_output.txt`
-
-**Quality Checks:**
-- Verifies R1 and R2 read pairs match by checking headers
-- Filters reads shorter than 150 base pairs
-- Separates reads with indexes that don't match any population
+# Script Descriptions
 
 ---
 
-## Step 2a: step2a_check_index_quality.py
+## demultiplex_folders.py
 
-Analyzes the quality of demultiplexing results from Step 2 and generates visualizations of read distributions and quality metrics.
+Purpose:
+- Create folder structure for demultiplexing
+- Prepare population-specific directories
 
-**Usage:**
-```bash
-python step2a_check_index_quality.py <experiment_name>
-```
+Input:
+- experiment name
 
-**Example:**
-```bash
-python step2a_check_index_quality.py example
-```
-
-**Input:**
-- Experiment name
-- Reads from the demultiplexing results directory: `results/{experiment_name}/demultiplexing/`
-- Analyzes:
-  - Input fastq files from `input_data/{experiment_name}/`
-  - Population fastq files in each `P{Population}/` folder
-  - Short reads files (`{GW_name}_short_reads_R1.fastq` and `_R2.fastq`)
-  - Unmatched reads files (`{GW_name}_unmatched_reads_R1.fastq` and `_R2.fastq`)
-
-**Output:**
-- Creates output directory at `results/{experiment_name}/index_quality/`
-- **Read length histogram**: Single PNG plot (`{experiment_name}_read_length_histogram.png`) with multi-panel layout
-  - Separate panels for each input fastq file (columns)
-  - Separate rows for R1 and R2 reads
-  - Samples up to 10,000 reads from each input file
-- **Read distribution bar plot**: Single PNG plot (`{experiment_name}_read_distribution.png`) with multi-panel layout
-  - Separate panels for each fastq file showing read distribution across:
-    - Each population
-    - Short reads category
-    - Unmatched reads category
-  - Displays read counts and percentages on bars
-- **Analysis CSV file**: Tidy R-compatible CSV (`index_quality_results.csv`) with columns:
-  - `experiment`, `sample`, `category_type`, `category`, `read_count`, `input_total`, `percentage_of_input`
-  - Includes rows for populations, QC categories, and summary totals
-  - Easily importable into R with `read.csv()`
-- **Summary report**: Text file (`index_quality_summary.txt`) with detailed statistics including:
-  - Total input reads
-  - Reads per population with percentages
-  - Short reads count and percentage
-  - Unmatched reads count and percentage
-  - Recovery rate (percentage of reads successfully categorized)
-
-**Visualizations:**
-- Uses Altair library for high-quality static visualizations
-- All plots saved as PNG files with multiple panels for easy comparison (with HTML fallback if PNG export fails)
-
-**Dependencies:**
-- Requires Step 2 (step2_demultiplex_index.py) to be run first
-- Python packages: altair, pandas, biopython, vl-convert-python (for PNG export)
+Output:
+- results/<exp>/demultiplexing/run_<min_len>/
 
 ---
 
-## Step 3: step3_demultiplex_UMI.py
+## demultiplex_index.py
 
-Detects and extracts UMI (Unique Molecular Identifier) sequences from demultiplexed reads, creating libraries organized by UMI pairs for each population.
+Purpose:
+- Match reads by R1/R2 index
+- Apply minimum read-length filtering
+- Classify reads into:
+  - matched
+  - short
+  - unmatched
 
-**Usage:**
-```bash
-python step3_demultiplex_UMI.py <experiment_name>
-```
+Key parameter: 
+- --min_len
 
-**Example:**
-```bash
-python step3_demultiplex_UMI.py example
-```
+Default: 150
 
-**Input:**
-- Experiment name (script will auto-detect multiplexing and UMI primers CSVs from `input_data/{experiment_name}/`)
-- Multiplexing CSV: File with 'multiplexing' in the name containing population information
-- UMI Primers CSV: File with 'UMI' or 'primer' in the name containing primer sequences
-  - CSV should have columns 'f' (forward primer, matches R1) and 'r' (reverse primer, matches R2)
-  - Each primer should contain exactly 10 consecutive N's indicating the UMI position
-
-**Output:**
-- Creates a UMI library pickle file for each population: `P{Population}_UMI_dict.pkl`
-- Library stored in `results/{experiment_name}/demultiplexing/P{Population}/`
-- Library structure: Dictionary with (forward_UMI, reverse_UMI) tuples as keys
-  - Each value contains:
-    - `'R1'`: List of BioPython SeqRecord objects (full untrimmed R1 reads)
-    - `'R2'`: List of BioPython SeqRecord objects (full untrimmed R2 reads)
-    - `'R1_trim_pos'`: Position where R1 should be trimmed (after primer + UMI)
-    - `'R2_trim_pos'`: Position where R2 should be trimmed (after primer + UMI)
-- SeqRecord objects preserve original read IDs, sequences, and per-base quality scores
-- Trimming is deferred to Step 4 (step4_alignment_prep.py) for flexibility
-- R1 and R2 sequences are in matched order by read pair
-- Also creates files for unmatched reads: `P{Population}_unmatched_UMI_R1.fastq` and `_R2.fastq`
-- Saves terminal output log to `results/{experiment_name}/logs/demultiplex_UMI_terminal_output.txt`
-
-**Processing Details:**
-- UMI extraction: Matches primer sequences before and after the 10 N's to find UMI location
-- Stores full untrimmed SeqRecord objects along with calculated trim positions
-- Trimming is performed downstream in Step 6 to preserve flexibility
-- Preserves all read metadata including IDs and quality scores
-- Verifies R1 and R2 read pairs match by checking headers
+Outputs:
+- Demultiplexed FASTQ files
+- metrics.json (machine-readable summary)
 
 ---
 
-## Step 3a: step3a_check_UMI_quality.py
+## check_index_quality.py
 
-Analyzes the quality of UMI dictionaries created by Step 4 and generates visualizations comparing UMI distributions across populations.
+Purpose:
+- Generate simplified QC overview plots
+- Provide quick lab-level inspection
 
-**Usage:**
-```bash
-python step3a_check_UMI_quality.py <experiment_name>
+Outputs:
+- Read distribution bar plot
+- Read length histogram
+- index_quality_summary.txt
+- metrics.json (passed through)
+
+Stored under:
 ```
-
-**Example:**
-```bash
-python step3a_check_UMI_quality.py example
+results/<exp>/qc_overview/run_<min_len>/
 ```
-
-**Input:**
-- Experiment name
-- UMI dictionary pickle files from `results/{experiment_name}/demultiplexing/P{Population}/`
-- Reads all files matching pattern `*_UMI_dict.pkl`
-
-**Output:**
-- Creates output directory at `results/{experiment_name}/UMI_quality/`
-- **UMI count bar plot**: PNG plot comparing the number of unique UMI pairs across populations
-- **Reads per UMI violin plot**: PNG plot showing distribution of read counts per UMI for each population
-- **Summary statistics**: Displays mean and median reads per UMI for each population
-- **Text summary**: `UMI_quality_summary.txt` with detailed statistics
-
-**Quality Metrics:**
-- Number of unique UMI pairs per population
-- Distribution of reads per UMI (to assess sequencing depth and coverage)
-- Populations with very few UMIs or highly uneven read distribution may indicate quality issues
-
-**Visualizations:**
-- Uses Altair library for high-quality static visualizations
-- All plots saved as PNG files
-
-**Dependencies:**
-- Requires Step 3 (step3_demultiplex_UMI.py) to be run first
-- Python packages: altair, pandas, pickle, vl-convert-python (for PNG export)
 
 ---
 
-## Step 4: step4_alignment_prep.py
+## qc/qc_driver.py
 
-Prepares UMI-grouped sequences for downstream alignment by trimming stored SeqRecord objects and organizing them into per-UMI FASTQ files.
+Main pipeline orchestrator.
 
-**Usage:**
-```bash
-python step4_alignment_prep.py <experiment_name> [--min-reads-per-umi N]
-```
+Responsibilities:
 
-**Example:**
-```bash
-# Include all UMI pairs with at least 1 read (default)
-python step4_alignment_prep.py example
+- Execute demultiplexing scripts
+- Manage directory structure
+- Generate QC overview
+- Generate QC details (FastQC unpacked)
+- Detect high discard rate
+- Support interactive rerun with new threshold
 
-# Only process UMI pairs with at least 5 reads
-python step4_alignment_prep.py example --min-reads-per-umi 5
+Important arguments:
+- --min_len
+- --warn_discard_rate
+- --interactive
 
-# Only process UMI pairs with at least 10 reads
-python step4_alignment_prep.py example --min-reads-per-umi 10
-```
+ 
+---
 
-**Input:**
-- Experiment name
-- UMI dictionary pickle files from `results/{experiment_name}/demultiplexing/P{Population}/`
-- Reads all files matching pattern `*_UMI_dict.pkl`
-- Optional: `--min-reads-per-umi` threshold (default: 2)
+## qc/entry_qc.py
 
-**Output:**
-- Creates output directory at `results/{experiment_name}/alignment/fastq/`
-- For each population, creates a subfolder: `P{Population}/`
-- For each UMI pair meeting the minimum read threshold, creates two FASTQ files:
-  - `{forward_UMI}_{reverse_UMI}_R1.fastq`: Trimmed R1 reads for that UMI pair
-  - `{forward_UMI}_{reverse_UMI}_R2.fastq`: Trimmed R2 reads for that UMI pair
-- Sequences are trimmed using trim positions stored in Step 3
-- Preserves original read IDs and per-base quality scores from input data
-- UMI pair information added to sequence description line
-- Saves terminal output log to `results/{experiment_name}/logs/alignment_prep_terminal_output.txt`
+Purpose:
+- Run FastQC
+- Unpack FastQC results
+- Generate structured QC report
+- Export Altair figures as PNG
 
-**Filtering:**
-- Only processes UMI pairs with at least `--min-reads-per-umi` sequences (default: 2)
-- Skips UMI pairs below threshold to reduce file count and focus on well-supported variants
-- Reports statistics on UMI pairs processed vs. skipped
+Used for:
 
-**Processing Details:**
-- Loads SeqRecord objects from UMI dictionaries
-- Trims sequences using stored `R1_trim_pos` and `R2_trim_pos` values
-- Slicing SeqRecord objects preserves per-base quality annotations
-- Backward compatible with older string-based dictionaries (if present)
-
-**Quality Preservation:**
-- Original FASTQ quality scores maintained through trimming
-- Read IDs preserved from source files
-- UMI pair metadata added to description field
-
-**Dependencies:**
-- Requires Step 3 (step3_demultiplex_UMI.py) to be run first
-- Python packages: biopython, pickle
+- Raw data QC
+- Post-demultiplex QC
 
 ---
 
-## Complete Pipeline Example
+# QC System
 
-```bash
-# Navigate to src directory
-cd src
+## QC Overview (qc_overview)
 
-# Step 0: Confirm files are present and correctly named
-python -m biongs.step0_file_confirmation example
+Designed for:
+- Rapid evaluation
+- Threshold comparison
+- Lab discussion
 
-# Step 0a: Run FastQC quality checks (requires FastQC installed)
-python -m biongs.step0a_fast_qc example
+Contains:
+- Distribution plot
+- Length histogram
+- metrics.json
 
-# Step 1: Create folder structure
-python step1_demultiplex_folders.py example
+---
 
-# Step 2: Demultiplex reads by index for all populations
-python step2_demultiplex_index.py example
+## QC Details (qc_details)
 
-# Step 2a: Check quality of demultiplexing results
-python step2a_check_index_quality.py example
+Designed for:
+- Professional inspection
+- Deep sequencing diagnostics
+- Publication-level validation
 
-# Step 3: Create UMI libraries for each population
-python step3_demultiplex_UMI.py example
+Contains:
+- Raw FastQC unpacked report
+- Post-demux FastQC unpacked report
 
-# Step 3a: Check quality of UMI data
-python step3a_check_UMI_quality.py example
+---
 
-# Step 4: Prepare sequences for alignment (trim and organize by UMI)
-python step4_alignment_prep.py example --min-reads-per-umi 5
+# Adaptive Filtering Logic
+
+1. Run baseline min_len (default 150)
+2. Compute discard_rate
+3. If discard_rate > threshold (default 30%):
+   - Print terminal warning
+   - Suggest rerun
+   - Optionally prompt user
+4. New run_<min_len> generated independently
+
+No runs are overwritten.
+
+---
+
+# metrics.json Structure
+
+Example:
+
+```json
+{
+  "overall": {
+    "total_reads": 165273,
+    "matched_reads": 101613,
+    "short_reads": 56165,
+    "unmatched_reads": 7495,
+    "discard_rate": 0.3398
+  }
+}
+```
+Used for:
+
+- Threshold warning logic
+
+- Future automation
+
+- Comparative analysis
+
+# Running Individual Components
+
+You may run modules independently:
+
+## Demultiplex only
+```
+python src/demultiplex_index.py example --min_len 150
+```
+## QC Overview only
+```
+python src/demultiplex_index.py example --min_len 150
+```
+## QC Overview only
+```
+python src/qc/entry_qc.py --manifest manifest.csv --outdir outdir
 ```

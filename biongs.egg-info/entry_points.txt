@@ -1,9 +1,2 @@
 [console_scripts]
-alignment-prep = biongs.alignment_prep:main
-biongs-qc = biongs.qc.qc_driver:main
-check-index-quality = biongs.check_index_quality:main
-check-umi-quality = biongs.check_UMI_quality:main
-demultiplex-folders = biongs.demultiplex_folders:main
-demultiplex-index = biongs.demultiplex_index:main
-demultiplex-umi = biongs.demultiplex_UMI:main
-fastqc-unpacker = biongs.fastqc_unpacker:main
+biongs = primerforge.cli:main
