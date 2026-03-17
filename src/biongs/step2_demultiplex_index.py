@@ -225,8 +225,8 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir, sh
     pop_r1_file = os.path.join(pop_folder, f"{population}_R1.fastq")
     pop_r2_file = os.path.join(pop_folder, f"{population}_R2.fastq")
     
-    short_r1_path = os.path.join(output_dir, f"{gw_name}_short_reads_{short_read_length}_R1.fastq")
-    short_r2_path = os.path.join(output_dir, f"{gw_name}_short_reads_{short_read_length}_R2.fastq")
+    short_r1_path = os.path.join(output_dir, f"{gw_name}_short_reads_R1.fastq")
+    short_r2_path = os.path.join(output_dir, f"{gw_name}_short_reads_R2.fastq")
     unmatched_r1_path = os.path.join(output_dir, f"{gw_name}_unmatched_reads_R1.fastq")
     unmatched_r2_path = os.path.join(output_dir, f"{gw_name}_unmatched_reads_R2.fastq")
     

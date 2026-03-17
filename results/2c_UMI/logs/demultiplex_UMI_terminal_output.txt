@@ -1,6 +1,6 @@
 
 ================================================================================
-Run started: 2026-03-15 22:25:32
+Run started: 2026-03-16 22:09:09
 Script: demultiplex_UMI
 ================================================================================
 Logging terminal output to: results/2c_UMI/logs/demultiplex_UMI_terminal_output.txt
@@ -13,21 +13,20 @@ Found 2 population(s) in CSV
 Output directory: results/2c_UMI/demultiplexing
 
   Processing P1...
-    Processed 10000 reads...
     Summary for P1:
-      Total reads: 16678
-      Reads with UMI: 6566
-      Unmatched reads: 10112
-      Unique UMI pairs: 6529
+      Total reads: 60528
+      Reads with UMI: 6571
+      Unmatched reads: 53957
+      Unique UMI pairs: 6534
       Mean reads per UMI: 1.0
   Saved UMI dictionary: P1_UMI_dict.pkl
 
   Processing P2...
     Summary for P2:
-      Total reads: 12888
-      Reads with UMI: 6986
-      Unmatched reads: 5902
-      Unique UMI pairs: 6941
+      Total reads: 45418
+      Reads with UMI: 6988
+      Unmatched reads: 38430
+      Unique UMI pairs: 6943
       Mean reads per UMI: 1.0
   Saved UMI dictionary: P2_UMI_dict.pkl
 
@@ -36,5 +35,5 @@ UMI dictionary creation complete!
 ============================================================
 
 ================================================================================
-Run ended: 2026-03-15 22:25:34
+Run ended: 2026-03-16 22:09:12
 ================================================================================

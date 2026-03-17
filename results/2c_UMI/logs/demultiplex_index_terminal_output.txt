@@ -1,11 +1,12 @@
 
 ================================================================================
-Run started: 2026-03-15 22:19:23
+Run started: 2026-03-16 22:08:28
 Script: demultiplex_index
 ================================================================================
 Logging terminal output to: results/2c_UMI/logs/demultiplex_index_terminal_output.txt
 Found multiplexing CSV: input_data/2c_UMI/2c_UMI_multiplexing_info.csv
 Output directory: results/2c_UMI/demultiplexing
+Short read length threshold: 60 bp
 
 Found 2 population(s) in CSV
 
@@ -14,14 +15,19 @@ Processing population: P22R1
   Found R1: input_data/2c_UMI/2c_UMI_fastq/P22R1_R1_001.fastq.gz
   Found R2: input_data/2c_UMI/2c_UMI_fastq/P22R1_R2_001.fastq.gz
   Processed 10000 reads...
+  Processed 20000 reads...
   Processed 30000 reads...
+  Processed 50000 reads...
   Processed 60000 reads...
+  Processed 70000 reads...
+  Processed 80000 reads...
+  Processed 90000 reads...
   Processed 100000 reads...
   Summary for P1 (GW_name: P22R1):
     Total reads: 108423
-    Matched reads: 16678 (15.38%)
-    Short reads: 78099 (72.03%)
-    Unmatched reads: 13646 (12.59%)
+    Matched reads: 60528 (55.83%)
+    Short reads: 8090 (7.46%)
+    Unmatched reads: 39805 (36.71%)
 
 Processing population: P22R2
   Expected indexes - R1: GCGTGACA, R2: GATGTACA
@@ -29,22 +35,27 @@ Processing population: P22R2
   Found R2: input_data/2c_UMI/2c_UMI_fastq/P22R2_R2_001.fastq.gz
   Processed 10000 reads...
   Processed 20000 reads...
+  Processed 30000 reads...
+  Processed 40000 reads...
   Processed 50000 reads...
+  Processed 60000 reads...
+  Processed 70000 reads...
+  Processed 80000 reads...
   Summary for P2 (GW_name: P22R2):
     Total reads: 83065
-    Matched reads: 12888 (15.52%)
-    Short reads: 59318 (71.41%)
-    Unmatched reads: 10859 (13.07%)
+    Matched reads: 45418 (54.68%)
+    Short reads: 6663 (8.02%)
+    Unmatched reads: 30984 (37.30%)
 
 ============================================================
 OVERALL DEMULTIPLEXING SUMMARY
 ============================================================
 P1 (GW_name: P22R1):
-  Total: 108423, Matched: 16678, Short: 78099, Unmatched: 13646
+  Total: 108423, Matched: 60528, Short: 8090, Unmatched: 39805
 P2 (GW_name: P22R2):
-  Total: 83065, Matched: 12888, Short: 59318, Unmatched: 10859
+  Total: 83065, Matched: 45418, Short: 6663, Unmatched: 30984
 ============================================================
 
 ================================================================================
-Run ended: 2026-03-15 22:19:29
+Run ended: 2026-03-16 22:08:34
 ================================================================================
