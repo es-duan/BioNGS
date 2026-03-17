@@ -16,10 +16,10 @@ source .venv/bin/activate  # On macOS/Linux
 # Install Python dependencies
 pip install -e .
 
-# Note: You must also install bowtie2 separately:
-# macOS: brew install bowtie2
-# Linux: sudo apt-get install bowtie2
-# Windows: See bowtie2 installation guide
+# Note: You must also install bowtie2, samtools, and bcftools separately:
+# macOS: brew install bowtie2 samtools bcftools
+# Linux: sudo apt-get install bowtie2 samtools bcftools
+# Windows: See bowtie2/samtools/bcftools installation guides
 ```
 
 ## Usage
