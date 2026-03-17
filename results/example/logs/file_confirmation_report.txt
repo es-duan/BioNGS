@@ -11,8 +11,8 @@ Required inputs:
 - FastQC (required for Step 0a): NOT INSTALLED
 
 Detected fastq pairs: 2
-  - P22R1_R1_001.fastq <-> P22R1_R2_001.fastq
-  - P22R2_R1_001.fastq <-> P22R2_R2_001.fastq
+  - P22R1_R1_001.fastq.gz <-> P22R1_R2_001.fastq.gz
+  - P22R2_R1_001.fastq.gz <-> P22R2_R2_001.fastq.gz
 
 Furthest runnable stage:
 - Step 6 can run (all required upload inputs are present).
