@@ -7,57 +7,64 @@
 
 # Step 0a: check the quality of NGS data with FastQC
 - name: step0a_fast_qc.py
-- input: fastq files in input_data/{experiment}/{experiment}_fastq
-- output: create a folder in results/{experiment}/qc that contains the html report of the sequence quality (named {fastq_name}_fastqc_report.html). There should be one report per pair of input fastq files.
-- description: using FastQC, generate a quality report for every pair (R1 and R2) of input fastq files.
-- dependencies: no scripts are necessary, but step 0 is recommended to confirm file locations and names.
+- inputs: experiment name; fastq files in `input_data/{experiment}/{experiment}_fastq/`; `fastqc` installed and available in PATH
+- outputs: HTML FastQC reports in `results/{experiment}/qc/` named `{fastq_basename}_fastqc.html`; non-HTML FastQC artifacts are removed
+- dependencies: none (Step 0 recommended)
+- description: finds all raw fastq/fq inputs (including gzipped), runs FastQC, then keeps only expected HTML reports
+- errors (what errors are raised): `FileNotFoundError` if input fastq directory/files are missing; `RuntimeError` if FastQC is not in PATH or no HTML reports are produced; `subprocess.CalledProcessError` if FastQC execution fails
 
-# Step 1: generate folders to store population demultiplexed files
+# Step 1: generate folders for demultiplexed populations
 - name: step1_demultiplex_folders.py
-- input: csv with population name and DNA index (forward and reserve) sequences. 
-- output: create a folder and empty R1 and R2 fastq files for each population
-- description: no scripts are necessary, but step 0 is recommended to confirm file locations and names.
+- inputs: experiment name; multiplexing CSV in `input_data/{experiment}/` matching `*multiplexing_info*.csv`
+- outputs: `results/{experiment}/demultiplexing/P{population}/` with empty `P{population}_R1.fastq` and `P{population}_R2.fastq`; terminal log in `results/{experiment}/logs/demultiplex_folders_terminal_output.txt`
+- dependencies: Step 0 recommended
+- description: reads population rows from the multiplexing CSV and creates one output folder plus empty paired fastq files per population
+- errors (what errors are raised): `FileNotFoundError` if experiment directory or multiplexing CSV is missing
 
 # Step 2: sort NGS reads by DNA index
-name: step2_demultiplex_index.py
-- input: input fastq files, csv with DNA indexes
-- output: populate the empty fastq files with the reads that belong to that population, based on matched index sequences; create an additional fastq file with reads that are too short (under 150 base pairs) and another fastq to store reads that do not match any of the index pairs
-- dependencies: step to be run after folders are generated (step 1)
-- description: using biopython, loop through each pair of input fastq files (ensure R1 and R2 match by checking the header), detect the forward (first 8 base pairs of R1) and reverse (first 8 bps of R2) indexes, and match those with the populations listed in the multiplexing_info.csv. For each match, open the population fastq file and write in that read. Also, make sure that the input fastq file name matches the GW_name of the population.
-    - quality check sequences: to make the script faster, load R1 reads first and check the length of the read. If it is under 150 bps, it is a short read. Place both reads in a short_reads_R1 or R2.fastq. Additionally, if the F and R indexes do not match any populations in the csv, put the R1 and R2 reads in a unmatched_reads_R1 and R2.fastq. There should be one pair of short_read/unmatched_read files per input file
+- name: step2_demultiplex_index.py
+- inputs: experiment name; multiplexing CSV; input R1/R2 fastq files (plain or gzipped); optional `--short-read-length` threshold (default 150)
+- outputs: populated `results/{experiment}/demultiplexing/P{population}/P{population}_R1.fastq` and `_R2.fastq`; `{GW_name}_short_reads_R1.fastq` and `_R2.fastq`; `{GW_name}_unmatched_reads_R1.fastq` and `_R2.fastq`; terminal log in `results/{experiment}/logs/demultiplex_index_terminal_output.txt`
+- dependencies: Step 1
+- description: pairs R1/R2 reads by GW_name, validates matching read IDs, extracts index (first 8 bases) and matches it to the multiplexing csv, classifies reads as short, matched-to-population-index, or unmatched, then writes to corresponding output files
+- errors (what errors are raised): `FileNotFoundError` if multiplexing CSV is missing; if output directory is missing the script prints an error and returns; CLI argument parsing errors are handled by argparse
 
 # Step 2a: check quality of indexing/NGS data
 - name: step2a_check_index_quality.py
-- input: input fastq files, populated demultiplexed population fastq files, short_read fastq files, and unmatched_read fastq files
-- output: histogram of read lengths from input fastq files; bar plot with the number of reads in each population fastq, short_read, and unmatched_read files (one per input fastq)
-- dependencies: step 2 must be run
+- inputs: experiment name; input fastq pairs (plain or gzipped); demultiplexing outputs from Step 2 (population fastqs, short reads, unmatched reads)
+- outputs: `results/{experiment}/index_quality/index_quality_results.csv`; `index_quality_summary.txt`; `{experiment}_read_length_histogram.png` (or HTML fallback); `{experiment}_read_distribution.png` (or HTML fallback)
+- dependencies: Step 2
+- description: counts reads per population/QC category, computes recovery metrics, samples read lengths from raw inputs, and generates QC plots plus tidy CSV and summary text
+- errors (what errors are raised): `FileNotFoundError` if multiplexing CSV or demultiplexing output directory is missing; PNG export failures are caught and downgraded to HTML fallback (warning only)
 
-# Step 3: create a dictionary of UMI reads for each population
+# Step 3: create UMI dictionaries per population
 - name: step3_demultiplex_UMI.py
-- input: demultiplexed population fastq files, UMI primer sequences
-- input: demultiplexed population fastq files, UMI primer sequences
-- output: dictionary where keys are UMI pairs and values are a list of a list of  R1 and R2 trimmed sequences that match that UMI. Save these dictionaries in the respective demultiplexing/population folders, named P{population number}_UMI_dict
-- dependencies: step 2
-- description: Loop through the demultiplexed fastq file for each population. Detect the UMI sequence by aligning to the primer sequence (the UMI is the 10 N bps on the primer) to each read. Forward UMIs are detected from R1, and reverse UMIs from R2. For each unique forward and reverse UMI pair, create a new key in a library. Store the sequences as under their respective UMI pair key. There should be one list of R1 reads and a corresponding list of R2 reads for each UMI. The R1 and R2 lists should be the same length and in order (ids should match).
+- inputs: experiment name; demultiplexed population fastq files; multiplexing CSV; UMI primers CSV containing `f` and `r` columns with exactly 10 consecutive `N` bases in each primer
+- outputs: per-population `P{population}_UMI_dict.pkl` under `results/{experiment}/demultiplexing/P{population}/`; unmatched UMI fastq files; terminal log in `results/{experiment}/logs/demultiplex_UMI_terminal_output.txt`
+- dependencies: Step 2
+- description: extracts forward/reverse UMIs from read pairs using primer structure, stores matched reads as UMI-pair keyed dictionaries with trim positions for downstream alignment prep
+- errors (what errors are raised): `ValueError` if primer format is invalid (not exactly 10 N bases) or required primer columns are missing; `FileNotFoundError` if multiplexing CSV, primer CSV, or required input paths are missing; some missing-path conditions are printed as errors and the script returns
 
 # Step 3a: check quality of UMI data
 - name: step3a_check_UMI_quality.py
-- input: dictionaries of UMI/sequences for each population
-- output: bar plot comparing the number of UMIs/population and reads per UMI per population
-- dependencies: step 3
-- description: compare the number of UMI pairs per population (length of dictionary), compare the number of sequences per UMI per population (length of R1 and R2 lists)
+- inputs: experiment name; UMI dictionaries `*_UMI_dict.pkl` in `results/{experiment}/demultiplexing/P*/`
+- outputs: `results/{experiment}/UMI_quality/UMI_count_per_population.png`; `reads_per_UMI_distribution.png`; `UMI_quality_summary.txt`; terminal metrics including UMI count, total reads, min/max reads per UMI
+- dependencies: Step 3
+- description: loads all UMI libraries, computes per-population UMI/read statistics, and generates population-level comparison plots and text summary
+- errors (what errors are raised): `FileNotFoundError` if demultiplexing directory is missing (caught in main quality check and reported); if no libraries are found/loadable, script prints an error and returns failure (`False`); plot export exceptions are caught and printed as warnings
 
-# Step 4: prepare UMI sequences for alignment to the genome
+# Step 4: prepare UMI sequences for alignment
 - name: step4_alignment_prep.py
-- input: UMI dictionary from step 3, UMI primer sequences
-- output: in a new folder under results/{experiment}/alignment/fastq, save R1 and R2 files for each UMI pair with more than 2 reads. The names should be {forwardUMI_reverseUMI}_R1.fastq and {forwardUMI_reverseUMI}_R2.fastq. Also include terminal output and csv version of terminal output with quality information that can be easily accessed in dataframe format.
-- description: Open the UMI dictionaries from step 3. Filter the libraries to remove UMI keys with only one forward and reverse read value. Trim the sequences to remove the entire primer sequence (detect matches to primer_after and set the last position as the trim position). Report the total number of keys, the number of keys that will move forward with alignment (greater than or equal to the minimum sequence pair), the number of keys removed (less than minimum) + percentage. Then, for the keys with more than or equal to the minimum, save the sequences in the output dir as R1 and R2 fastq files.
+- inputs: experiment name; UMI dictionaries from Step 3; optional `--min-reads-per-umi` threshold
+- outputs: per-population alignment fastq files in `results/{experiment}/alignment/fastq/P{population}/` named `{forwardUMI}_{reverseUMI}_R1.fastq` and `_R2.fastq`; terminal log in `results/{experiment}/logs/alignment_prep_terminal_output.txt`
+- dependencies: Step 3
+- description: loads UMI dictionaries, trims reads using stored trim positions, filters by minimum reads-per-UMI, and writes trimmed paired fastq files for downstream alignment
+- errors (what errors are raised): `FileNotFoundError` if demultiplexing directory is missing (caught and reported); if no UMI libraries are found, script prints an error and returns failure (`False`)
 
-
-# Step 5: use the bowtie aligner and SAMtools to align reads to the genome
-- name: align_reads.sh
-- input: UMI fastqs, saved from step 4 in results/{experiment}/alignment/fastq, rpoB reference genome index (prepared with bowtie in input_data/reference_docs)
-- output: sam files in vcf outputs in results/{experiment}/alignment/sam, bam outputs in results/{experiment}/alignment/bam, vcf outputs in results/{experiment}/alignment/vcf, with population folders, and named by UMI pair (same as fastq)
-- dependencies: step 4
-- description: use the bowtie_test.sh tool as a template. For each UMI pair in the alignment/fastq file, use bowtie2 to align the reads to the specified reference genome index. Use samtools to convert the outputted sam file to a bam file, then bcftools to convert the bam files to vcf files. Have an option to include command arguments: experiment (ex. example, this is consistent with previous python scripts), index (specify the reference genome index to use for alignment)
-
+# Step 5: align reads to reference and call variants
+- name: step5_align_reads.sh
+- inputs: `experiment`, `reference_index`, and `reference_fasta` CLI args; prepared alignment fastqs in `results/{experiment}/alignment/fastq/P*/`; bowtie2/samtools/bcftools installed
+- outputs: per-population SAM/BAM/VCF in `results/{experiment}/alignment/sam/{population}/`, `results/{experiment}/alignment/bam/{population}/`, and `results/{experiment}/alignment/vcf/{population}/`; terminal summary of success/failure counts
+- dependencies: Step 4
+- description: iterates population folders and UMI pairs, runs Bowtie2 alignment, converts SAM→sorted BAM with SAMtools, then runs BCFtools mpileup/call to produce VCF per UMI pair
+- errors (what errors are raised): shell script exits with code `1` for invalid arg count, missing input directories/files, or any failed alignment/conversion/calling task; missing R2 for a UMI pair is logged as a warning and counted as failed

@@ -4,5 +4,7 @@ alignment_testing/*
 input_data/example/example_fastq/P22R2_R1_001.fastq
 input_data/example/example_fastq/P22R2_R2_001.fastq
 results/example/alignment/*
-**.pytest_cache
-biongs.egg-info/*
+.pytest_cache/
+**/.pytest_cache/
+*.egg-info/
+**/*.egg-info/
