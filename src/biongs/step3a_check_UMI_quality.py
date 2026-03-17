@@ -20,6 +20,7 @@ import argparse
 from collections import Counter
 import altair as alt
 import pandas as pd
+from Bio import SeqIO
 
 
 def find_umi_libraries(experiment_name, output_base='results'):
@@ -105,6 +106,39 @@ def analyze_umi_dict(umi_dict):
         'min_reads_per_umi': min(reads_per_umi) if reads_per_umi else 0,
         'max_reads_per_umi': max(reads_per_umi) if reads_per_umi else 0,
     }
+
+
+def count_unmatched_reads(population_folder, population):
+    """
+    Count the number of unmatched UMI reads for a population.
+    
+    Parameters:
+    -----------
+    population_folder : str
+        Path to the population folder (e.g., demultiplexing/P1/)
+    population : str
+        Population name (e.g., "P1")
+        
+    Returns:
+    --------
+    int
+        Number of unmatched reads (reads without UMI match in either R1 or R2)
+    """
+    unmatched_r1_fastq = os.path.join(population_folder, f"{population}_unmatched_UMI_R1.fastq")
+    
+    if not os.path.exists(unmatched_r1_fastq):
+        return 0
+    
+    count = 0
+    try:
+        with open(unmatched_r1_fastq, 'r') as f:
+            for record in SeqIO.parse(f, 'fastq'):
+                count += 1
+    except Exception as e:
+        print(f"    Warning: Could not count unmatched reads for {population}: {e}")
+        return 0
+    
+    return count
 
 
 def create_umi_count_plot(libraries_data, output_dir):
@@ -243,6 +277,93 @@ def create_reads_per_umi_plot(libraries_data, output_dir):
         print(f"  Warning: Could not save PNG. Error: {e}")
 
 
+def create_umi_match_status_plot(libraries_data, output_dir, experiment_name):
+    """
+    Create a faceted bar plot comparing matched vs unmatched UMI reads per population.
+    
+    Parameters:
+    -----------
+    libraries_data : dict
+        Dictionary mapping population names to analysis results
+    output_dir : str
+        Directory to save the plot
+    experiment_name : str
+        Name of the experiment
+    """
+    populations = sorted(libraries_data.keys())
+    demultiplex_base = os.path.join('results', experiment_name, 'demultiplexing')
+    
+    # Collect data for all populations
+    data_rows = []
+    for pop in populations:
+        # Get matched UMI count
+        matched_count = libraries_data[pop]['num_umis']
+        
+        # Get unmatched read count
+        population_folder = os.path.join(demultiplex_base, pop)
+        unmatched_count = count_unmatched_reads(population_folder, pop)
+        
+        # Add rows for the bar chart
+        data_rows.append({'Population': pop, 'Status': 'Matched UMIs', 'Count': matched_count})
+        data_rows.append({'Population': pop, 'Status': 'Unmatched Reads', 'Count': unmatched_count})
+    
+    df = pd.DataFrame(data_rows)
+    
+    # Create bar chart with faceting by population
+    bars = alt.Chart(df).mark_bar(
+        opacity=0.7,
+        stroke='black',
+        strokeWidth=1
+    ).encode(
+        x=alt.X('Status:N', title='UMI Status', sort=['Matched UMIs', 'Unmatched Reads']),
+        y=alt.Y('Count:Q', title='Count'),
+        color=alt.Color('Status:N', scale=alt.Scale(scheme='set2')),
+        tooltip=[
+            alt.Tooltip('Population:N', title='Population'),
+            alt.Tooltip('Status:N', title='Status'),
+            alt.Tooltip('Count:Q', title='Count', format=',')
+        ]
+    ).properties(
+        width=200,
+        height=300
+    )
+    
+    # Add value labels on top of bars
+    text = alt.Chart(df).mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-5,
+        fontSize=10
+    ).encode(
+        x=alt.X('Status:N', sort=['Matched UMIs', 'Unmatched Reads']),
+        y=alt.Y('Count:Q'),
+        text=alt.Text('Count:Q', format=',')
+    )
+    
+    # Facet by population
+    chart = (bars + text).facet(
+        column=alt.Column('Population:N', title='Population', sort=populations)
+    ).properties(
+        title='UMI Match Status per Population'
+    ).configure_axis(
+        labelFontSize=11,
+        titleFontSize=12
+    ).configure_header(
+        labelFontSize=11,
+        titleFontSize=12
+    ).configure_title(
+        fontSize=14
+    )
+    
+    # Save as PNG
+    output_path = os.path.join(output_dir, 'UMI_match_status.png')
+    try:
+        chart.save(output_path, scale_factor=2.0)
+        print(f"  Saved: {output_path}")
+    except Exception as e:
+        print(f"  Warning: Could not save PNG. Error: {e}")
+
+
 def create_summary_statistics_plot(libraries_data, output_dir):
     """
     Create a summary statistics table as a text file.
@@ -337,6 +458,7 @@ def check_umi_quality(experiment_name):
     print("\nGenerating visualizations...")
     create_umi_count_plot(libraries_data, output_dir)
     create_reads_per_umi_plot(libraries_data, output_dir)
+    create_umi_match_status_plot(libraries_data, output_dir, experiment_name)
     create_summary_statistics_plot(libraries_data, output_dir)
     
     return True

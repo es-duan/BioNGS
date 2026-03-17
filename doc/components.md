@@ -47,11 +47,11 @@
 
 # Step 3a: check quality of UMI data
 - name: step3a_check_UMI_quality.py
-- inputs: experiment name; UMI dictionaries `*_UMI_dict.pkl` in `results/{experiment}/demultiplexing/P*/`
-- outputs: `results/{experiment}/UMI_quality/UMI_count_per_population.png`; `reads_per_UMI_distribution.png`; `UMI_quality_summary.txt`; terminal metrics including UMI count, total reads, min/max reads per UMI
+- inputs: experiment name; UMI dictionaries `*_UMI_dict.pkl` in `results/{experiment}/demultiplexing/P*/`; unmatched UMI fastq files `P*_unmatched_UMI_R1.fastq` in `results/{experiment}/demultiplexing/P*/`
+- outputs: `results/{experiment}/UMI_quality/UMI_count_per_population.png`; `reads_per_UMI_distribution.png`; `UMI_match_status.png` (faceted bar chart of matched vs unmatched UMI counts per population); `UMI_quality_summary.txt`; terminal metrics including UMI count, total reads, min/max reads per UMI
 - dependencies: Step 3
-- description: loads all UMI libraries, computes per-population UMI/read statistics, and generates population-level comparison plots and text summary
-- errors (what errors are raised): `FileNotFoundError` if demultiplexing directory is missing (caught in main quality check and reported); if no libraries are found/loadable, script prints an error and returns failure (`False`); plot export exceptions are caught and printed as warnings
+- description: loads all UMI libraries, computes per-population UMI/read statistics, counts unmatched UMI reads from output fastq files, and generates population-level comparison plots (UMI counts, read distribution, and match status) plus text summary
+- errors (what errors are raised): `FileNotFoundError` if demultiplexing directory is missing (caught in main quality check and reported); if no libraries are found/loadable, script prints an error and returns failure (`False`); warnings logged if unmatched fastq files cannot be found or counted; plot export exceptions are caught and printed as warnings
 
 # Step 4: prepare UMI sequences for alignment
 - name: step4_alignment_prep.py
