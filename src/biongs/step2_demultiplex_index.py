@@ -1,14 +1,15 @@
 """
 Step 2: Sort NGS reads by DNA index
 
-Input: Experiment name
+Input: Experiment name, optional short read length threshold (default 150 bp)
 Output: For each population in the multiplexing CSV, process its corresponding fastq files
         (matched by GW_name) and extract reads with matching indexes; create additional 
-        files for short reads (<150 bp) and unmatched reads
+        files for short reads and unmatched reads
 Dependencies: Step 1 (step1_demultiplex_folders.py) must be run first
 Description: Using biopython, for each population in the CSV, find fastq files matching
              its GW_name, detect the forward (first 8 bp of R1) and reverse (first 8 bp 
              of R2) indexes, and extract reads that match that population's indexes.
+             Reads below the short_read_length threshold are saved separately.
 """
 
 import os
@@ -183,7 +184,7 @@ def load_populations(csv_path):
     return populations
 
 
-def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir):
+def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir, short_read_length=150):
     """
     Process paired-end reads for a single population, extracting reads that match
     the population's indexes.
@@ -198,6 +199,8 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir):
         Path to R2 input fastq file
     output_dir : str
         Directory containing population folders
+    short_read_length : int
+        Threshold for short reads in base pairs (default 150)
         
     Returns:
     --------
@@ -222,8 +225,8 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir):
     pop_r1_file = os.path.join(pop_folder, f"{population}_R1.fastq")
     pop_r2_file = os.path.join(pop_folder, f"{population}_R2.fastq")
     
-    short_r1_path = os.path.join(output_dir, f"{gw_name}_short_reads_R1.fastq")
-    short_r2_path = os.path.join(output_dir, f"{gw_name}_short_reads_R2.fastq")
+    short_r1_path = os.path.join(output_dir, f"{gw_name}_short_reads_{short_read_length}_R1.fastq")
+    short_r2_path = os.path.join(output_dir, f"{gw_name}_short_reads_{short_read_length}_R2.fastq")
     unmatched_r1_path = os.path.join(output_dir, f"{gw_name}_unmatched_reads_R1.fastq")
     unmatched_r2_path = os.path.join(output_dir, f"{gw_name}_unmatched_reads_R2.fastq")
     
@@ -253,8 +256,8 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir):
                 print(f"  R2: {r2_id}")
                 continue
             
-            # Check if read is too short (< 150 bp)
-            if len(r1_record.seq) < 150 or len(r2_record.seq) < 150:
+            # Check if read is too short
+            if len(r1_record.seq) < short_read_length or len(r2_record.seq) < short_read_length:
                 SeqIO.write(r1_record, short_r1_handle, 'fastq')
                 SeqIO.write(r2_record, short_r2_handle, 'fastq')
                 counts['short'] += 1
@@ -291,7 +294,7 @@ def process_population_reads(population_info, r1_fastq, r2_fastq, output_dir):
     return counts
 
 
-def demultiplex_all_populations(experiment_name, csv_path, output_dir):
+def demultiplex_all_populations(experiment_name, csv_path, output_dir, short_read_length=150):
     """
     Process all populations in the CSV, finding and demultiplexing their fastq files.
     
@@ -303,6 +306,8 @@ def demultiplex_all_populations(experiment_name, csv_path, output_dir):
         Path to the multiplexing CSV file
     output_dir : str
         Output directory for demultiplexed files
+    short_read_length : int
+        Threshold for short reads in base pairs (default 150)
     """
     # Load all populations
     populations = load_populations(csv_path)
@@ -329,7 +334,7 @@ def demultiplex_all_populations(experiment_name, csv_path, output_dir):
         print(f"  Found R2: {r2_fastq}")
         
         # Process the reads
-        counts = process_population_reads(pop_info, r1_fastq, r2_fastq, output_dir)
+        counts = process_population_reads(pop_info, r1_fastq, r2_fastq, output_dir, short_read_length)
         
         # Print summary for this population
         population = f"P{pop_info['Population']}"
@@ -368,6 +373,12 @@ def main():
         'experiment_name',
         help='Name of the experiment (e.g., "example")'
     )
+    parser.add_argument(
+        '--short-read-length',
+        type=int,
+        default=150,
+        help='Threshold for short reads in base pairs (default: 150)'
+    )
     
     args = parser.parse_args()
 
@@ -389,10 +400,11 @@ def main():
         print("Please run demultiplex_folders.py first to create the directory structure.")
         return
     
-    print(f"Output directory: {output_dir}\n")
+    print(f"Output directory: {output_dir}")
+    print(f"Short read length threshold: {args.short_read_length} bp\n")
     
     # Process all populations
-    demultiplex_all_populations(args.experiment_name, csv_path, output_dir)
+    demultiplex_all_populations(args.experiment_name, csv_path, output_dir, args.short_read_length)
 
 
 if __name__ == '__main__':
