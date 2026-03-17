@@ -83,4 +83,3 @@ bash src/biongs/step5_align_reads.sh \
 
 - If a command is not found after install, re-activate your environment and run `pip install -e .` again.
 - You can still run modules directly (for example: `python -m biongs.step0_file_confirmation example`).
-- See [src/README.md](src/README.md) for detailed per-step behavior and outputs.
